@@ -253,6 +253,8 @@ add_shortcode('consultoria_gpt', function() {
   document.documentElement.style.height = '100%';
   document.body.style.height = '100%';
   document.body.style.margin = '0';
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
   document.body.appendChild(overlay);
 
   const host = document.createElement('div');
@@ -262,6 +264,7 @@ add_shortcode('consultoria_gpt', function() {
 
   const metaViewport = document.querySelector('meta[name="viewport"]');
   if (metaViewport) {
+    metaViewport.setAttribute('content','width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no');
     metaViewport.setAttribute('content','width=device-width,initial-scale=1,maximum-scale=1');
   }
 
@@ -301,7 +304,7 @@ add_shortcode('consultoria_gpt', function() {
   .send svg{ width:22px; height:22px; display:block; fill:currentColor; filter: drop-shadow(0 1px 0 rgba(0,0,0,.45)); } /* visible siempre */
   .send svg path{ stroke: rgba(0,0,0,.55); stroke-width: .6px; }
   .contact-ctas{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-  .cta{ flex:1; padding:8px 12px; border-radius:8px; text-align:center; background:var(--pri); color:#fff; text-decoration:none; font-size:clamp(12px,1.8vw,14px); }
+  .cta{ flex:1 1 calc(33.333% - 8px); padding:8px 12px; border-radius:8px; text-align:center; background:var(--pri); color:#fff; text-decoration:none; font-size:clamp(12px,1.8vw,14px); }
   .cta:hover{ filter: brightness(1.08); }
   .typing{ display:inline-flex; align-items:center; gap:4px; }
   .dot{ width:6px; height:6px; border-radius:50%; background:#606770; opacity:.4; animation:blink 1.2s infinite; }
@@ -309,6 +312,8 @@ add_shortcode('consultoria_gpt', function() {
   @keyframes blink{ 0%,80%,100%{opacity:.2} 40%{opacity:1} }
   @media (max-width:560px){
     .chips{ justify-content:flex-start; padding:10px 8px; }
+    .contact-ctas{ flex-direction:column; }
+    .cta{ flex:1 1 auto; }
   }
   .input{ padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
   `;
@@ -400,7 +405,7 @@ add_shortcode('consultoria_gpt', function() {
         if(role !== 'user'){
           const ctas = document.createElement('div');
           ctas.className = 'contact-ctas';
-          ctas.innerHTML = '<a class="cta" href="tel:643932121">Llámanos ahora</a>'+
+          ctas.innerHTML = '<a class="cta" href="tel:+34643932121">Llámanos ahora</a>'+
             '<a class="cta" href="https://api.whatsapp.com/send?phone=+34643932121&text=Me%20gustar%C3%ADa%20recibir%20m%C3%A1s%20informaci%C3%B3n!" target="_blank" rel="noopener">Háblanos por WhatsApp</a>'+
             '<a class="cta" href="mailto:info@consultoriainformatica.net">Escríbenos</a>';
           bubble.appendChild(ctas);
