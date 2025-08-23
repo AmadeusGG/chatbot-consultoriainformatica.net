@@ -8,6 +8,21 @@ Author: Amadeo
 
 if (!defined('ABSPATH')) exit;
 
+// Register a restricted role for chatbot users
+register_activation_hook(__FILE__, function(){
+    add_role('ci_gpt_user', 'Consultoria GPT', ['read' => true]);
+});
+
+// Prevent chatbot users from accessing the dashboard
+add_action('admin_init', function(){
+    if (wp_doing_ajax()) return;
+    $user = wp_get_current_user();
+    if (in_array('ci_gpt_user', (array)$user->roles)) {
+        wp_safe_redirect(home_url());
+        exit;
+    }
+});
+
 // Detect pages where the shortcode is used
 function ci_gpt_has_shortcode_page(){
     if (!is_singular()) return false;
@@ -548,25 +563,30 @@ function ci_gpt_google_login() {
     $pass = wp_generate_password(20, true, true);
 
     if ($user) {
-        $user_id = wp_insert_user([
-            'ID' => $user->ID,
-            'user_pass' => $pass,
+        $user_id = wp_update_user([
+            'ID'           => $user->ID,
+            'user_pass'    => $pass,
             'display_name' => $name,
-            'first_name' => $first,
-            'last_name' => $last,
+            'first_name'   => $first,
+            'last_name'    => $last,
+            'role'         => 'ci_gpt_user',
         ]);
     } else {
-        $login = sanitize_user(current(explode('@', $email)), true);
+        $login = sanitize_user(str_replace('@', '_', $email), true);
+        if (empty($login)) {
+            $login = 'user_' . wp_generate_password(8, false, false);
+        }
         if (username_exists($login)) {
             $login .= '_' . wp_generate_password(4, false, false);
         }
         $user_id = wp_insert_user([
-            'user_login' => $login,
-            'user_email' => $email,
-            'user_pass' => $pass,
+            'user_login'   => $login,
+            'user_email'   => $email,
+            'user_pass'    => $pass,
             'display_name' => $name,
-            'first_name' => $first,
-            'last_name' => $last,
+            'first_name'   => $first,
+            'last_name'    => $last,
+            'role'         => 'ci_gpt_user',
         ]);
     }
 
