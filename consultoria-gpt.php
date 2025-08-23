@@ -8,6 +8,41 @@ Author: Amadeo
 
 if (!defined('ABSPATH')) exit;
 
+// Detect pages where the shortcode is used
+function ci_gpt_has_shortcode_page(){
+    if (!is_singular()) return false;
+    $post = get_post();
+    return $post && has_shortcode($post->post_content, 'consultoria_gpt');
+}
+
+/* =========================
+ *  FRONTEND ASSETS
+ * ========================= */
+add_action('wp_enqueue_scripts', function(){
+    if (!ci_gpt_has_shortcode_page()) return;
+
+    $gsi_src = 'https://accounts.google.com/gsi/client';
+    global $wp_scripts;
+
+    if ($wp_scripts){
+        foreach ($wp_scripts->queue as $handle){
+            $src = isset($wp_scripts->registered[$handle]->src) ? $wp_scripts->registered[$handle]->src : '';
+            if (strpos($src, $gsi_src) !== false){
+                wp_script_add_data($handle, 'async', true);
+                wp_script_add_data($handle, 'defer', true);
+                continue;
+            }
+            wp_dequeue_script($handle);
+        }
+    }
+
+    if (!wp_script_is('google-gsi', 'enqueued') && !wp_script_is('ci-gsi', 'enqueued')){
+        wp_enqueue_script('ci-gsi', $gsi_src, [], null, false);
+        wp_script_add_data('ci-gsi', 'async', true);
+        wp_script_add_data('ci-gsi', 'defer', true);
+    }
+}, PHP_INT_MAX);
+
 /* =========================
  *  ADMIN MENU & SETTINGS
  * ========================= */
