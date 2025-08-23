@@ -313,6 +313,8 @@ add_shortcode('consultoria_gpt', function() {
  * ========================= */
 add_action('wp_ajax_ci_gpt_chat', 'ci_gpt_chat');
 add_action('wp_ajax_nopriv_ci_gpt_chat', 'ci_gpt_chat');
+add_action('wp_ajax_ci_gpt_google_login', 'ci_gpt_google_login');
+add_action('wp_ajax_nopriv_ci_gpt_google_login', 'ci_gpt_google_login');
 
 function ci_gpt_chat() {
     header('Content-Type: application/json; charset=utf-8');
@@ -383,4 +385,82 @@ function ci_gpt_chat() {
     echo json_encode(['reply'=>$reply]);
     wp_die();
 }
+
+function ci_gpt_google_login() {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $token = isset($_POST['id_token']) ? sanitize_text_field($_POST['id_token']) : '';
+    if (!$token) {
+        echo json_encode(['success'=>false,'error'=>'Token faltante']);
+        wp_die();
+    }
+
+    $verify = wp_remote_get('https://oauth2.googleapis.com/tokeninfo?id_token=' . rawurlencode($token));
+    if (is_wp_error($verify)) {
+        echo json_encode(['success'=>false,'error'=>'Error de conexión con Google']);
+        wp_die();
+    }
+
+    $code = wp_remote_retrieve_response_code($verify);
+    $body = json_decode(wp_remote_retrieve_body($verify), true);
+    if ($code !== 200 || !is_array($body) || empty($body['email'])) {
+        echo json_encode(['success'=>false,'error'=>'Token inválido']);
+        wp_die();
+    }
+
+    $email = sanitize_email($body['email']);
+    $name  = sanitize_text_field($body['name'] ?? '');
+    $first = sanitize_text_field($body['given_name'] ?? '');
+    $last  = sanitize_text_field($body['family_name'] ?? '');
+
+    $user = get_user_by('email', $email);
+    $pass = wp_generate_password(20, true, true);
+
+    if ($user) {
+        $user_id = wp_insert_user([
+            'ID' => $user->ID,
+            'user_pass' => $pass,
+            'display_name' => $name,
+            'first_name' => $first,
+            'last_name' => $last,
+        ]);
+    } else {
+        $login = sanitize_user(current(explode('@', $email)), true);
+        if (username_exists($login)) {
+            $login .= '_' . wp_generate_password(4, false, false);
+        }
+        $user_id = wp_insert_user([
+            'user_login' => $login,
+            'user_email' => $email,
+            'user_pass' => $pass,
+            'display_name' => $name,
+            'first_name' => $first,
+            'last_name' => $last,
+        ]);
+    }
+
+    if (is_wp_error($user_id)) {
+        echo json_encode(['success'=>false,'error'=>$user_id->get_error_message()]);
+        wp_die();
+    }
+
+    $creds = [
+        'user_login' => get_userdata($user_id)->user_login,
+        'user_password' => $pass,
+        'remember' => true,
+    ];
+    $signon = wp_signon($creds, false);
+    if (is_wp_error($signon)) {
+        echo json_encode(['success'=>false,'error'=>$signon->get_error_message()]);
+        wp_die();
+    }
+
+    echo json_encode(['success'=>true,'user'=>[
+        'id' => $user_id,
+        'email' => $email,
+        'name' => $name,
+    ]]);
+    wp_die();
+}
+
 ?>
