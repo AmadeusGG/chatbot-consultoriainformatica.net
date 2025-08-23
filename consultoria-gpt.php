@@ -19,16 +19,20 @@ add_action('admin_menu', function() {
 
 add_action('admin_init', function() {
     register_setting('ci_gpt_options', 'ci_gpt_api_key');
+    register_setting('ci_gpt_options', 'ci_gpt_google_client_id');
+    register_setting('ci_gpt_options', 'ci_gpt_google_client_secret');
     register_setting('ci_gpt_options', 'ci_gpt_logo');
     register_setting('ci_gpt_options', 'ci_gpt_model');
     register_setting('ci_gpt_options', 'ci_gpt_theme'); // light | dark | auto
 });
 
 function ci_gpt_settings_page() {
-    $api   = esc_attr(get_option('ci_gpt_api_key'));
-    $logo  = esc_attr(get_option('ci_gpt_logo'));
-    $model = esc_attr(get_option('ci_gpt_model', 'gpt-4o-mini'));
-    $theme = esc_attr(get_option('ci_gpt_theme', 'light')); ?>
+    $api     = esc_attr(get_option('ci_gpt_api_key'));
+    $client  = esc_attr(get_option('ci_gpt_google_client_id'));
+    $secret  = esc_attr(get_option('ci_gpt_google_client_secret'));
+    $logo    = esc_attr(get_option('ci_gpt_logo'));
+    $model   = esc_attr(get_option('ci_gpt_model', 'gpt-4o-mini'));
+    $theme   = esc_attr(get_option('ci_gpt_theme', 'light')); ?>
     <div class="wrap">
         <h1>Consultoria GPT — Ajustes</h1>
         <form method="post" action="options.php">
@@ -37,6 +41,14 @@ function ci_gpt_settings_page() {
                 <tr>
                     <th scope="row">API Key OpenAI</th>
                     <td><input type="password" name="ci_gpt_api_key" value="<?php echo $api; ?>" style="width:420px;" placeholder="sk-..."></td>
+                </tr>
+                <tr>
+                    <th scope="row">Google Client ID</th>
+                    <td><input type="text" name="ci_gpt_google_client_id" value="<?php echo $client; ?>" style="width:420px;" placeholder="your-client-id"></td>
+                </tr>
+                <tr>
+                    <th scope="row">Google Client Secret</th>
+                    <td><input type="password" name="ci_gpt_google_client_secret" value="<?php echo $secret; ?>" style="width:420px;" placeholder="your-client-secret"></td>
                 </tr>
                 <tr>
                     <th scope="row">Logo (URL)</th>
