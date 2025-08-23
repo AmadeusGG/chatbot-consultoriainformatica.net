@@ -102,7 +102,7 @@ add_shortcode('consultoria_gpt', function() {
   const themeOpt = (mount.getAttribute('data-theme') || 'light').toLowerCase();
 
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:' + (themeOpt==='dark' ? '#0b0f14' : '#fff') + ';';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:' + (themeOpt==='dark' ? '#0b0f14' : '#fff') + ';display:flex;justify-content:center;align-items:stretch;';
   document.body.innerHTML = '';
   document.documentElement.style.height = '100%';
   document.body.style.height = '100%';
@@ -110,8 +110,14 @@ add_shortcode('consultoria_gpt', function() {
   document.body.appendChild(overlay);
 
   const host = document.createElement('div');
+  host.style.cssText = 'width:100%;max-width:1400px;height:100%;';
   overlay.appendChild(host);
   const root = host.attachShadow({mode:'open'});
+
+  const metaViewport = document.querySelector('meta[name="viewport"]');
+  if (metaViewport) {
+    metaViewport.setAttribute('content','width=device-width,initial-scale=1,maximum-scale=1');
+  }
 
   const css = `
   :host{ all: initial; color-scheme: light; } /* forzar controles claros por defecto */
@@ -122,7 +128,7 @@ add_shortcode('consultoria_gpt', function() {
     --ai:#f7f8fa; --ai-b:#e6e7ea; --us:#dff2ff; --us-b:#c7e6ff;
     --chip:#ffffff; --chip-b:#d1d5db;
   }
-  .wrap{ position:absolute; inset:0; display:flex; flex-direction:column; width:100%; height:100%; margin:0; max-width:none; border:none; border-radius:0; overflow:hidden; background:#fff; box-shadow:none; }
+  .wrap{ position:absolute; inset:0; display:flex; flex-direction:column; width:100%; height:100%; margin:0; border:none; border-radius:0; overflow:hidden; background:#fff; box-shadow:none; }
   .header{ text-align:center; padding:22px 18px; background:var(--mut); border-bottom:1px solid var(--bd); }
   .header img{ max-height:56px; margin:0 auto 8px; display:block; }
   .title{ margin:4px 0 2px; font-size: clamp(18px,2.2vw,22px); font-weight:800; }
@@ -139,7 +145,7 @@ add_shortcode('consultoria_gpt', function() {
   .row.user .bubble{ background:var(--us); border:1px solid var(--us-b); }
   .row.ai .bubble{ background:var(--ai); border:1px solid var(--ai-b); }
   .input{ display:flex; gap:8px; padding:10px 12px; border-top:1px solid var(--bd); background:#ffffff; position:sticky; bottom:0; left:0; right:0; }
-  .field{ flex:1; padding:12px 14px; border:1px solid #d1d5db; border-radius:12px; font-size:clamp(13px,1.8vw,15px); outline:none; background:#fff; color:#0f172a; }
+  .field{ flex:1; padding:12px 14px; border:1px solid #d1d5db; border-radius:12px; font-size:16px; outline:none; background:#fff; color:#0f172a; }
   .field::placeholder{ color:#9aa3ae; }
   .field:focus{ border-color:#93c5fd; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
   .send{ width:46px; min-width:46px; height:46px; display:flex; align-items:center; justify-content:center; border:none; border-radius:12px;
