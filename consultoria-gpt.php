@@ -193,12 +193,12 @@ add_shortcode('consultoria_gpt', function() {
     document.body.appendChild(overlay);
 
     const header = document.createElement('div');
-    header.style.cssText = 'background:#005AE2;color:#fff;padding:16px;display:flex;justify-content:space-between;align-items:center;';
-    header.innerHTML = `<div style="display:flex;align-items:center;gap:8px;">
-        ${logoUrl ? `<img src="${logoUrl}" alt="logo" style="width:24px;height:24px;border-radius:4px;object-fit:cover;">` : ''}
-        <span style="font-size:18px;font-weight:600;">Empieza gratis</span>
-      </div>
-      <button id="ci-gpt-close" style="background:none;border:none;color:#fff;font-size:24px;line-height:1;cursor:pointer;">×</button>`;
+    header.style.cssText = 'position:relative;background:#005AE2;color:#fff;padding:24px 16px;text-align:center;';
+    header.innerHTML = `
+      <button id="ci-gpt-close" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#fff;font-size:24px;line-height:1;cursor:pointer;">×</button>
+      ${logoUrl ? `<img src="${logoUrl}" alt="logo" style="width:64px;height:64px;border-radius:8px;object-fit:cover;display:block;margin:0 auto 8px;">` : ''}
+      <span style="font-size:20px;font-weight:600;display:block;">Empieza gratis</span>
+    `;
     overlay.appendChild(header);
 
     const mid = document.createElement('div');
@@ -256,7 +256,7 @@ add_shortcode('consultoria_gpt', function() {
   document.body.appendChild(overlay);
 
   const host = document.createElement('div');
-  host.style.cssText = 'width:100%;max-width:1400px;height:100%;';
+  host.style.cssText = 'width:100%;max-width:480px;height:100%;';
   overlay.appendChild(host);
   const root = host.attachShadow({mode:'open'});
 
@@ -275,7 +275,8 @@ add_shortcode('consultoria_gpt', function() {
     --chip:#ffffff; --chip-b:#d1d5db;
   }
   .wrap{ position:absolute; inset:0; display:flex; flex-direction:column; width:100%; height:100%; margin:0; border:none; border-radius:0; overflow:hidden; background:#fff; box-shadow:none; }
-  .header{ text-align:center; padding:22px 18px; background:var(--mut); border-bottom:1px solid var(--bd); }
+  .header{ position:relative; text-align:center; padding:22px 18px; background:var(--mut); border-bottom:1px solid var(--bd); }
+  .logout{ position:absolute; top:12px; right:12px; background:none; border:none; color:inherit; cursor:pointer; font-size:14px; }
   .header img{ max-height:56px; margin:0 auto 8px; display:block; }
   .title{ margin:4px 0 2px; font-size: clamp(18px,2.2vw,22px); font-weight:800; }
   .desc{ margin:0; font-size: clamp(12px,1.6vw,14px); color:#4b5563; }
@@ -300,8 +301,8 @@ add_shortcode('consultoria_gpt', function() {
   .send[disabled]{ opacity:.6; cursor:not-allowed; }
   .send svg{ width:22px; height:22px; display:block; fill:currentColor; filter: drop-shadow(0 1px 0 rgba(0,0,0,.45)); } /* visible siempre */
   .send svg path{ stroke: rgba(0,0,0,.55); stroke-width: .6px; }
-  .contact-ctas{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-  .cta{ flex:1; padding:8px 12px; border-radius:8px; text-align:center; background:var(--pri); color:#fff; text-decoration:none; font-size:clamp(12px,1.8vw,14px); }
+  .contact-ctas{ display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+  .cta{ display:block; padding:8px 12px; border-radius:8px; text-align:center; background:var(--pri); color:#fff; text-decoration:none; font-size:clamp(12px,1.8vw,14px); }
   .cta:hover{ filter: brightness(1.08); }
   .typing{ display:inline-flex; align-items:center; gap:4px; }
   .dot{ width:6px; height:6px; border-radius:50%; background:#606770; opacity:.4; animation:blink 1.2s infinite; }
@@ -334,6 +335,7 @@ add_shortcode('consultoria_gpt', function() {
   const html = `
     <div class="wrap">
       <div class="header">
+        <button class="logout" id="ci-logout">Cerrar sesión</button>
         ${logoUrl ? `<img src="${logoUrl}" alt="Consultoría Informática">` : ''}
         <div class="title">Consultoría Informática</div>
         <p class="desc">Asistente especializado en automatización, desarrollo web, inteligencia artificial y soluciones digitales para empresas.</p>
@@ -369,14 +371,31 @@ add_shortcode('consultoria_gpt', function() {
   const fieldEl = root.getElementById('field');
   const sendBtn = root.getElementById('send');
   const chips = root.getElementById('chips');
+  const logoutBtn = root.getElementById('ci-logout');
+  if (logoutBtn) logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('ci-gpt-auth');
+    localStorage.removeItem('ciMessages');
+    location.reload();
+  });
   let sending = false;
 
   // History
   let history = [];
-  try { const saved = sessionStorage.getItem('ciMessages'); if(saved) history = JSON.parse(saved); } catch(e){}
+  try { const saved = localStorage.getItem('ciMessages'); if(saved) history = JSON.parse(saved); } catch(e){}
   if (history.length) { history.forEach(m => render(m.role, m.content)); scroll(); }
+  else {
+    typingOn();
+    setTimeout(function(){
+      typingOff();
+      const welcome = 'bienvenido a consultoriainformatica.net';
+      history.push({role:'assistant',content:welcome});
+      render('ai', welcome);
+      persist();
+      scroll();
+    },2000);
+  }
 
-  function persist(){ try{ sessionStorage.setItem('ciMessages', JSON.stringify(history)); } catch(e){} }
+  function persist(){ try{ localStorage.setItem('ciMessages', JSON.stringify(history)); } catch(e){} }
   function scroll(){ msgsEl.scrollTop = msgsEl.scrollHeight; }
   function setSending(state){ sending = state; sendBtn.disabled = state; Array.from(chips.children).forEach(b=>b.disabled=state); }
   function typingOn(){ render('ai','',true); scroll(); }
