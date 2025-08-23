@@ -518,9 +518,9 @@ function ci_gpt_google_login() {
     }
 
     $email = sanitize_email($body['email']);
-    $name  = sanitize_text_field($body['name'] ?? '');
-    $first = sanitize_text_field($body['given_name'] ?? '');
-    $last  = sanitize_text_field($body['family_name'] ?? '');
+    $name  = sanitize_text_field(isset($body['name']) ? $body['name'] : '');
+    $first = sanitize_text_field(isset($body['given_name']) ? $body['given_name'] : '');
+    $last  = sanitize_text_field(isset($body['family_name']) ? $body['family_name'] : '');
 
     $user = get_user_by('email', $email);
     $pass = wp_generate_password(20, true, true);
