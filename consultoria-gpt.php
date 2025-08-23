@@ -135,15 +135,13 @@ add_shortcode('consultoria_gpt', function() {
     $ajax   = esc_js(admin_url('admin-ajax.php?action=ci_gpt_chat'));
     $glogin = esc_js(admin_url('admin-ajax.php?action=ci_gpt_google_login'));
     $client = esc_attr(get_option('ci_gpt_google_client_id'));
-    $theme  = esc_attr(get_option('ci_gpt_theme','light'));
-    $logged = is_user_logged_in() ? '1' : '0'; ?>
+    $theme  = esc_attr(get_option('ci_gpt_theme','light')); ?>
 <div id="ci-gpt-mount"
      data-logo="<?php echo $logo; ?>"
      data-ajax="<?php echo $ajax; ?>"
      data-glogin="<?php echo $glogin; ?>"
      data-client="<?php echo $client; ?>"
      data-theme="<?php echo $theme ? $theme : 'light'; ?>"
-     data-logged="<?php echo $logged; ?>"
      style="display:block;contain:content;position:relative;z-index:1;"></div>
 
 <script>
@@ -155,7 +153,7 @@ add_shortcode('consultoria_gpt', function() {
   const clientId  = mount.getAttribute('data-client');
   const logoUrl   = mount.getAttribute('data-logo') || '';
   const themeOpt  = (mount.getAttribute('data-theme') || 'light').toLowerCase();
-  const loggedIn  = mount.getAttribute('data-logged') === '1';
+  const authed    = localStorage.getItem('ci-gpt-auth') === '1';
 
   function handleCredentialResponse(res){
     if(!res || !res.credential || !googleUrl) return;
@@ -165,6 +163,7 @@ add_shortcode('consultoria_gpt', function() {
       .then(r => r.json())
       .then(data => {
         if(data && data.success){
+          localStorage.setItem('ci-gpt-auth','1');
           location.reload();
         } else {
           alert((data && data.error) ? data.error : 'Error al iniciar sesión');
@@ -175,23 +174,46 @@ add_shortcode('consultoria_gpt', function() {
 
   function renderRegister(){
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:' + (themeOpt==='dark' ? '#0b0f14' : '#fff') + ';display:flex;justify-content:center;align-items:center;';
-    document.body.innerHTML = '';
-    document.documentElement.style.height = '100%';
-    document.body.style.height = '100%';
-    document.body.style.margin = '0';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:#fff;display:flex;flex-direction:column;';
     document.body.appendChild(overlay);
 
-    const box = document.createElement('div');
-    box.style.cssText = `max-width:420px;width:100%;padding:24px;border:1px solid #d1d5db;border-radius:12px;background:#fff;display:flex;flex-direction:column;gap:12px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;color:#0f172a;`;
-    box.innerHTML = `
-      <h2 style="margin:0 0 8px;text-align:center;font-size:20px;">Registro</h2>
-      <div id="ci-gpt-google"></div>
-      <input type="text" id="ci-gpt-name" placeholder="Nombre" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
-      <input type="email" id="ci-gpt-email" placeholder="Correo" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
-      <label style="font-size:14px;"><input type="checkbox" id="ci-gpt-terms"> Acepto los términos</label>
-    `;
-    overlay.appendChild(box);
+    const header = document.createElement('div');
+    header.style.cssText = 'background:#005AE2;color:#fff;padding:16px;display:flex;justify-content:space-between;align-items:center;';
+    header.innerHTML = `<div style="display:flex;align-items:center;gap:8px;">
+        ${logoUrl ? `<img src="${logoUrl}" alt="logo" style="width:24px;height:24px;border-radius:4px;object-fit:cover;">` : ''}
+        <span style="font-size:18px;font-weight:600;">Empieza gratis</span>
+      </div>
+      <button id="ci-gpt-close" style="background:none;border:none;color:#fff;font-size:24px;line-height:1;cursor:pointer;">×</button>`;
+    overlay.appendChild(header);
+
+    const mid = document.createElement('div');
+    mid.style.cssText = 'flex:1;padding:24px;display:flex;justify-content:center;align-items:center;';
+    mid.innerHTML = `<div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,\'Helvetica Neue\',Arial,\'Noto Sans\',sans-serif;color:#0f172a;">
+        <div id="ci-gpt-google"></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#64748b;"><div style="flex:1;height:1px;background:#e2e8f0;"></div>o<div style="flex:1;height:1px;background:#e2e8f0;"></div></div>
+        <input type="email" id="ci-gpt-email" placeholder="Correo electrónico" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+        <button id="ci-gpt-email-btn" style="padding:10px;border:none;border-radius:8px;background:#f97316;color:#fff;font-weight:600;cursor:pointer;">Continuar con correo electrónico</button>
+        <label style="font-size:12px;color:#475569;"><input type="checkbox" id="ci-gpt-terms"> Acepto los <a href="/terminos" target="_blank">Términos de Servicio</a> y la <a href="/privacidad" target="_blank">Política de Privacidad</a></label>
+      </div>`;
+    overlay.appendChild(mid);
+
+    const footer = document.createElement('div');
+    footer.style.cssText = 'text-align:center;font-size:12px;color:#475569;padding:16px;background:#f8fafc;';
+    footer.innerHTML = '© 2025 Consultoría Informática. NET<br><a href="/política-de-cookies" target="_blank">Política de Cookies</a> | <a href="/política-de-privacidad" target="_blank">Política de Privacidad</a> | <a href="/aviso-legal" target="_blank">Aviso Legal</a>';
+    overlay.appendChild(footer);
+
+    const closeBtn = overlay.querySelector('#ci-gpt-close');
+    if (closeBtn) closeBtn.addEventListener('click', () => { window.location.href = '/'; });
+
+    const emailBtn = overlay.querySelector('#ci-gpt-email-btn');
+    if (emailBtn) emailBtn.addEventListener('click', () => {
+      const terms = overlay.querySelector('#ci-gpt-terms');
+      const email = overlay.querySelector('#ci-gpt-email');
+      if (!terms || !terms.checked) { alert('Debes aceptar los términos'); return; }
+      if (!email || !email.value) { alert('Introduce un correo'); return; }
+      localStorage.setItem('ci-gpt-auth','1');
+      location.reload();
+    });
 
     const waitG = setInterval(function(){
       if(window.google && window.google.accounts && clientId){
@@ -205,7 +227,7 @@ add_shortcode('consultoria_gpt', function() {
     }, 100);
   }
 
-  if(!loggedIn){
+  if(!authed){
     renderRegister();
     return;
   }
@@ -518,9 +540,9 @@ function ci_gpt_google_login() {
     }
 
     $email = sanitize_email($body['email']);
-    $name  = sanitize_text_field($body['name'] ?? '');
-    $first = sanitize_text_field($body['given_name'] ?? '');
-    $last  = sanitize_text_field($body['family_name'] ?? '');
+    $name  = sanitize_text_field(isset($body['name']) ? $body['name'] : '');
+    $first = sanitize_text_field(isset($body['given_name']) ? $body['given_name'] : '');
+    $last  = sanitize_text_field(isset($body['family_name']) ? $body['family_name'] : '');
 
     $user = get_user_by('email', $email);
     $pass = wp_generate_password(20, true, true);
