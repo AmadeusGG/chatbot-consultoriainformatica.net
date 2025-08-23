@@ -98,11 +98,15 @@ add_shortcode('consultoria_gpt', function() {
     ob_start();
     $logo  = esc_attr(get_option('ci_gpt_logo'));
     $ajax  = esc_js(admin_url('admin-ajax.php?action=ci_gpt_chat'));
-    $theme = esc_attr(get_option('ci_gpt_theme','light')); ?>
+    $theme = esc_attr(get_option('ci_gpt_theme','light'));
+    $logged = is_user_logged_in() ? '1' : '0';
+    $login_url = esc_url( wp_login_url() ); ?>
 <div id="ci-gpt-mount"
      data-logo="<?php echo $logo; ?>"
      data-ajax="<?php echo $ajax; ?>"
      data-theme="<?php echo $theme ? $theme : 'light'; ?>"
+     data-logged="<?php echo $logged; ?>"
+     data-login="<?php echo $login_url; ?>"
      style="display:block;contain:content;position:relative;z-index:1;"></div>
 
 <script>
@@ -112,6 +116,38 @@ add_shortcode('consultoria_gpt', function() {
   const ajaxUrl  = mount.getAttribute('data-ajax');
   const logoUrl  = mount.getAttribute('data-logo') || '';
   const themeOpt = (mount.getAttribute('data-theme') || 'light').toLowerCase();
+  const loggedIn = mount.getAttribute('data-logged') === '1';
+  const loginUrl = mount.getAttribute('data-login');
+
+  function renderRegister(){
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:' + (themeOpt==='dark' ? '#0b0f14' : '#fff') + ';display:flex;justify-content:center;align-items:center;';
+    document.body.innerHTML = '';
+    document.documentElement.style.height = '100%';
+    document.body.style.height = '100%';
+    document.body.style.margin = '0';
+    document.body.appendChild(overlay);
+
+    const box = document.createElement('div');
+    box.style.cssText = `max-width:420px;width:100%;padding:24px;border:1px solid #d1d5db;border-radius:12px;background:#fff;display:flex;flex-direction:column;gap:12px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;color:#0f172a;`;
+    box.innerHTML = `
+      <h2 style="margin:0 0 8px;text-align:center;font-size:20px;">Registro</h2>
+      <button id="ci-gpt-google" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;">Continuar con Google</button>
+      <input type="text" id="ci-gpt-name" placeholder="Nombre" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+      <input type="email" id="ci-gpt-email" placeholder="Correo" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+      <label style="font-size:14px;"><input type="checkbox" id="ci-gpt-terms"> Acepto los términos</label>
+    `;
+    overlay.appendChild(box);
+
+    document.getElementById('ci-gpt-google').addEventListener('click', function(){
+      window.location.href = loginUrl;
+    });
+  }
+
+  if(!loggedIn){
+    renderRegister();
+    return;
+  }
 
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:' + (themeOpt==='dark' ? '#0b0f14' : '#fff') + ';display:flex;justify-content:center;align-items:stretch;';
