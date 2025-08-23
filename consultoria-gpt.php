@@ -119,6 +119,7 @@ add_shortcode('consultoria_gpt', function() {
   const metaViewport = document.querySelector('meta[name="viewport"]');
   if (metaViewport) {
     metaViewport.setAttribute('content','width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no');
+    metaViewport.setAttribute('content','width=device-width,initial-scale=1,maximum-scale=1');
   }
 
   const css = `
