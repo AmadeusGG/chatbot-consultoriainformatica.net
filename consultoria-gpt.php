@@ -2,7 +2,7 @@
 /*
 Plugin Name: Consultoria GPT
 Description: Asistente IA (estilo ChatGPT) para consultoriainformatica.net. Shortcode: [consultoria_gpt]
-Version: 1.5
+Version: 1.6
 Author: Amadeo
 */
 
@@ -101,9 +101,25 @@ add_shortcode('consultoria_gpt', function() {
   const logoUrl  = mount.getAttribute('data-logo') || '';
   const themeOpt = (mount.getAttribute('data-theme') || 'light').toLowerCase();
 
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:' + (themeOpt==='dark' ? '#0b0f14' : '#fff') + ';display:flex;justify-content:center;align-items:stretch;';
+  document.body.innerHTML = '';
+  document.documentElement.style.height = '100%';
+  document.body.style.height = '100%';
+  document.body.style.margin = '0';
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+  document.body.appendChild(overlay);
+
   const host = document.createElement('div');
-  mount.appendChild(host);
+  host.style.cssText = 'width:100%;max-width:1400px;height:100%;';
+  overlay.appendChild(host);
   const root = host.attachShadow({mode:'open'});
+
+  const metaViewport = document.querySelector('meta[name="viewport"]');
+  if (metaViewport) {
+    metaViewport.setAttribute('content','width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no');
+  }
 
   const css = `
   :host{ all: initial; color-scheme: light; } /* forzar controles claros por defecto */
@@ -114,7 +130,7 @@ add_shortcode('consultoria_gpt', function() {
     --ai:#f7f8fa; --ai-b:#e6e7ea; --us:#dff2ff; --us-b:#c7e6ff;
     --chip:#ffffff; --chip-b:#d1d5db;
   }
-  .wrap{ max-width:820px; margin:24px auto 90px; border:1px solid var(--bd); border-radius:14px; overflow:hidden; background:#fff; box-shadow:0 6px 24px rgba(0,0,0,.06); }
+  .wrap{ position:absolute; inset:0; display:flex; flex-direction:column; width:100%; height:100%; margin:0; border:none; border-radius:0; overflow:hidden; background:#fff; box-shadow:none; }
   .header{ text-align:center; padding:22px 18px; background:var(--mut); border-bottom:1px solid var(--bd); }
   .header img{ max-height:56px; margin:0 auto 8px; display:block; }
   .title{ margin:4px 0 2px; font-size: clamp(18px,2.2vw,22px); font-weight:800; }
@@ -124,14 +140,14 @@ add_shortcode('consultoria_gpt', function() {
   .chip:hover{ background:#eef2ff; border-color:#c7d2fe; }
   .chip:active{ transform: translateY(1px); }
   .chip[disabled]{ opacity:.5; cursor:not-allowed; }
-  .msgs{ height:520px; overflow-y:auto; padding:14px 16px; background:#fff; }
+  .msgs{ flex:1; overflow-y:auto; padding:14px 16px; background:#fff; }
   .row{ display:flex; margin:6px 0; }
   .row.user{ justify-content:flex-end; }
   .bubble{ max-width:88%; padding:10px 12px; border-radius:16px; line-height:1.55; white-space:pre-wrap; word-wrap:break-word; font-size:clamp(13px,1.8vw,15px); }
   .row.user .bubble{ background:var(--us); border:1px solid var(--us-b); }
   .row.ai .bubble{ background:var(--ai); border:1px solid var(--ai-b); }
   .input{ display:flex; gap:8px; padding:10px 12px; border-top:1px solid var(--bd); background:#ffffff; position:sticky; bottom:0; left:0; right:0; }
-  .field{ flex:1; padding:12px 14px; border:1px solid #d1d5db; border-radius:12px; font-size:clamp(13px,1.8vw,15px); outline:none; background:#fff; color:#0f172a; }
+  .field{ flex:1; padding:12px 14px; border:1px solid #d1d5db; border-radius:12px; font-size:16px; outline:none; background:#fff; color:#0f172a; }
   .field::placeholder{ color:#9aa3ae; }
   .field:focus{ border-color:#93c5fd; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
   .send{ width:46px; min-width:46px; height:46px; display:flex; align-items:center; justify-content:center; border:none; border-radius:12px;
@@ -140,14 +156,17 @@ add_shortcode('consultoria_gpt', function() {
   .send[disabled]{ opacity:.6; cursor:not-allowed; }
   .send svg{ width:22px; height:22px; display:block; fill:currentColor; filter: drop-shadow(0 1px 0 rgba(0,0,0,.45)); } /* visible siempre */
   .send svg path{ stroke: rgba(0,0,0,.55); stroke-width: .6px; }
+  .contact-ctas{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .cta{ flex:1 1 calc(33.333% - 8px); padding:8px 12px; border-radius:8px; text-align:center; background:var(--pri); color:#fff; text-decoration:none; font-size:clamp(12px,1.8vw,14px); }
+  .cta:hover{ filter: brightness(1.08); }
   .typing{ display:inline-flex; align-items:center; gap:4px; }
   .dot{ width:6px; height:6px; border-radius:50%; background:#606770; opacity:.4; animation:blink 1.2s infinite; }
   .dot:nth-child(2){ animation-delay:.2s; } .dot:nth-child(3){ animation-delay:.4s; }
   @keyframes blink{ 0%,80%,100%{opacity:.2} 40%{opacity:1} }
   @media (max-width:560px){
-    .wrap{ border-radius:0; box-shadow:none; margin:0 0 96px; border-left:none; border-right:none; }
-    .msgs{ height:62vh; }
     .chips{ justify-content:flex-start; padding:10px 8px; }
+    .contact-ctas{ flex-direction:column; }
+    .cta{ flex:1 1 auto; }
   }
   .input{ padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
   `;
@@ -221,23 +240,33 @@ add_shortcode('consultoria_gpt', function() {
   function typingOn(){ render('ai','',true); scroll(); }
   function typingOff(){ Array.from(msgsEl.querySelectorAll('[data-typing="1"]')).forEach(n=>n.remove()); }
 
-  function render(role, text, typing=false){
-    const row = document.createElement('div');
-    row.className = 'row ' + (role==='user'?'user':'ai');
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-    if (typing){
-      row.dataset.typing = '1';
-      const t = document.createElement('div');
-      t.className = 'typing';
-      t.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-      bubble.appendChild(t);
-    } else {
-      bubble.textContent = text;
+    function render(role, text, typing=false){
+      const row = document.createElement('div');
+      row.className = 'row ' + (role==='user'?'user':'ai');
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      if (typing){
+        row.dataset.typing = '1';
+        const t = document.createElement('div');
+        t.className = 'typing';
+        t.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+        bubble.appendChild(t);
+      } else {
+        const txt = document.createElement('div');
+        txt.textContent = text;
+        bubble.appendChild(txt);
+        if(role !== 'user'){
+          const ctas = document.createElement('div');
+          ctas.className = 'contact-ctas';
+          ctas.innerHTML = '<a class="cta" href="tel:+34643932121">Llámanos ahora</a>'+
+            '<a class="cta" href="https://api.whatsapp.com/send?phone=+34643932121&text=Me%20gustar%C3%ADa%20recibir%20m%C3%A1s%20informaci%C3%B3n!" target="_blank" rel="noopener">Háblanos por WhatsApp</a>'+
+            '<a class="cta" href="mailto:info@consultoriainformatica.net">Escríbenos</a>';
+          bubble.appendChild(ctas);
+        }
+      }
+      row.appendChild(bubble);
+      msgsEl.appendChild(row);
     }
-    row.appendChild(bubble);
-    msgsEl.appendChild(row);
-  }
 
   async function send(txt){
     if(!txt || sending) return;
@@ -276,20 +305,7 @@ add_shortcode('consultoria_gpt', function() {
     const q = b.getAttribute('data-q'); if(q) send(q);
   });
 
-  // Height fit for viewport + extra bottom margin to avoid overlays (e.g. translator widgets)
-  function fit(){
-    try{
-      const wrap = root.querySelector('.wrap');
-      const rect = wrap.getBoundingClientRect();
-      const header = root.querySelector('.header').offsetHeight;
-      const chipsH = root.querySelector('.chips').offsetHeight;
-      const inputH = root.querySelector('.input').offsetHeight;
-      const winH = window.innerHeight;
-      const target = Math.max(260, winH - (rect.top + header + chipsH + inputH + 24));
-      msgsEl.style.height = target + 'px';
-    }catch(e){}
-  }
-  fit(); window.addEventListener('resize', fit); window.addEventListener('orientationchange', fit);
+  // Ajuste de altura ya manejado con flexbox
 })();
 </script>
 <?php
