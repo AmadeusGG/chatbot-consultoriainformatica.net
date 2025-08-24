@@ -248,7 +248,7 @@ add_shortcode('consultoria_gpt', function() {
   }
 
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:' + (themeOpt==='dark' ? '#0b0f14' : '#fff') + ';display:flex;justify-content:center;align-items:stretch;';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:' + (themeOpt==='dark' ? '#0b0f14' : '#fff') + ';display:flex;justify-content:center;align-items:center;';
   document.body.innerHTML = '';
   document.documentElement.style.height = '100%';
   document.body.style.height = '100%';
@@ -256,7 +256,13 @@ add_shortcode('consultoria_gpt', function() {
   document.body.appendChild(overlay);
 
   const host = document.createElement('div');
-  host.style.cssText = 'width:100%;max-width:480px;height:100%;';
+  host.style.cssText = 'position:relative;width:100%;max-width:480px;height:100%;';
+  if (window.matchMedia('(min-width:600px)').matches) {
+    host.style.maxHeight = '700px';
+    host.style.borderRadius = '12px';
+    host.style.boxShadow = '0 8px 24px rgba(0,0,0,.12)';
+    host.style.overflow = 'hidden';
+  }
   overlay.appendChild(host);
   const root = host.attachShadow({mode:'open'});
 
@@ -272,7 +278,7 @@ add_shortcode('consultoria_gpt', function() {
   :root{
     --bd:#e5e7eb; --mut:#f8fafc; --mut2:#fcfcfd; --pri:#0b63d1;
     --ai:#f7f8fa; --ai-b:#e6e7ea; --us:#dff2ff; --us-b:#c7e6ff;
-    --chip:#ffffff; --chip-b:#d1d5db;
+    --chip:#ffffff; --chip-b:#d1d5db; --chip-text:#0f172a;
   }
   .wrap{ position:absolute; inset:0; display:flex; flex-direction:column; width:100%; height:100%; margin:0; border:none; border-radius:0; overflow:hidden; background:#fff; box-shadow:none; }
   .header{ position:relative; text-align:center; padding:22px 18px; background:var(--mut); border-bottom:1px solid var(--bd); }
@@ -281,7 +287,7 @@ add_shortcode('consultoria_gpt', function() {
   .title{ margin:4px 0 2px; font-size: clamp(18px,2.2vw,22px); font-weight:800; }
   .desc{ margin:0; font-size: clamp(12px,1.6vw,14px); color:#4b5563; }
   .chips{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; padding:12px; background:var(--mut2); border-bottom:1px solid #eef2f7; overflow-x:auto; scroll-snap-type:x mandatory; }
-  .chip{ scroll-snap-align:start; padding:9px 12px; border-radius:999px; border:1px solid var(--chip-b); background:var(--chip); cursor:pointer; font-size:clamp(12px,1.8vw,14px); color:#0f172a; white-space:nowrap; box-shadow:0 2px 0 rgba(0,0,0,.02); transition: background .15s,border-color .15s,transform .08s }
+  .chip{ scroll-snap-align:start; padding:9px 12px; border-radius:999px; border:1px solid var(--chip-b); background:var(--chip); cursor:pointer; font-size:clamp(12px,1.8vw,14px); color:var(--chip-text); white-space:nowrap; box-shadow:0 2px 0 rgba(0,0,0,.02); transition: background .15s,border-color .15s,transform .08s }
   .chip:hover{ background:#eef2ff; border-color:#c7d2fe; }
   .chip:active{ transform: translateY(1px); }
   .chip[disabled]{ opacity:.5; cursor:not-allowed; }
@@ -319,12 +325,11 @@ add_shortcode('consultoria_gpt', function() {
   :host{ color-scheme: dark; }
   :root{
     --bd:#2b2f36; --mut:#101318; --mut2:#0c0f14; --ai:#141922; --ai-b:#1f2430;
-    --us:#0f2540; --us-b:#15365c; --chip:#0f1420; --chip-b:#2c3444;
+    --us:#0f2540; --us-b:#15365c; --chip:#0f1420; --chip-b:#2c3444; --chip-text:#e5e7eb;
   }
   :host{ color:#e5e7eb; }
   .wrap{ background:#0b0f14; box-shadow:none; }
   .desc{ color:#b3b8c2; }
-  .chip{ color:#e5e7eb; }
   .field{ background:#0e131a; color:#e6edf5; border-color:#293241; }
   .field::placeholder{ color:#8b93a1; }
   .input{ background:#0b0f14; }
@@ -387,9 +392,9 @@ add_shortcode('consultoria_gpt', function() {
     typingOn();
     setTimeout(function(){
       typingOff();
-      const welcome = 'bienvenido a consultoriainformatica.net';
+      const welcome = '¡Bienvenido a consultoriainformatica.net! Somos especialistas en inteligencia artificial, diseño de aplicaciones web a medida, ciberseguridad, big data y gestión de proyectos IT.';
       history.push({role:'assistant',content:welcome});
-      render('ai', welcome);
+      render('ai', welcome, false, false);
       persist();
       scroll();
     },2000);
@@ -401,7 +406,7 @@ add_shortcode('consultoria_gpt', function() {
   function typingOn(){ render('ai','',true); scroll(); }
   function typingOff(){ Array.from(msgsEl.querySelectorAll('[data-typing="1"]')).forEach(n=>n.remove()); }
 
-    function render(role, text, typing=false){
+    function render(role, text, typing=false, showCtas=true){
       const row = document.createElement('div');
       row.className = 'row ' + (role==='user'?'user':'ai');
       const bubble = document.createElement('div');
@@ -416,7 +421,7 @@ add_shortcode('consultoria_gpt', function() {
         const txt = document.createElement('div');
         txt.textContent = text;
         bubble.appendChild(txt);
-        if(role !== 'user'){
+        if(role !== 'user' && showCtas){
           const ctas = document.createElement('div');
           ctas.className = 'contact-ctas';
           ctas.innerHTML = '<a class="cta" href="tel:643932121">Llámanos ahora</a>'+
