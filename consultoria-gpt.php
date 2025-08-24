@@ -37,7 +37,7 @@ add_action('wp_enqueue_scripts', function(){
     if (!ci_gpt_has_shortcode_page()) return;
 
     $gsi_src = 'https://accounts.google.com/gsi/client';
-    global $wp_scripts;
+    global $wp_scripts, $wp_styles;
 
     if ($wp_scripts){
         foreach ($wp_scripts->queue as $handle){
@@ -48,6 +48,12 @@ add_action('wp_enqueue_scripts', function(){
                 continue;
             }
             wp_dequeue_script($handle);
+        }
+    }
+
+    if ($wp_styles){
+        foreach ($wp_styles->queue as $handle){
+            wp_dequeue_style($handle);
         }
     }
 
@@ -163,6 +169,14 @@ add_shortcode('consultoria_gpt', function() {
 (function(){
   const mount = document.getElementById('ci-gpt-mount');
   if (!mount) return;
+
+  const clearThirdParty = () => {
+    document.querySelectorAll('script[src*="translate"],link[href*="translate"]').forEach(el => el.remove());
+    document.querySelectorAll('[id*="translate"],[class*="translate"]').forEach(el => el.remove());
+  };
+  clearThirdParty();
+  new MutationObserver(clearThirdParty).observe(document.documentElement,{childList:true,subtree:true});
+
   const ajaxUrl   = mount.getAttribute('data-ajax');
   const googleUrl = mount.getAttribute('data-glogin');
   const clientId  = mount.getAttribute('data-client');
@@ -203,18 +217,18 @@ add_shortcode('consultoria_gpt', function() {
 
     const mid = document.createElement('div');
     mid.style.cssText = 'flex:1;padding:24px;display:flex;justify-content:center;align-items:center;';
-    mid.innerHTML = `<div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,\'Helvetica Neue\',Arial,\'Noto Sans\',sans-serif;color:#0f172a;">
+    mid.innerHTML = `<div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,\'Helvetica Neue\',Arial,\'Noto Sans\',sans-serif;color:#0f172a;">
         <div id="ci-gpt-google"></div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#64748b;"><div style="flex:1;height:1px;background:#e2e8f0;"></div>o<div style="flex:1;height:1px;background:#e2e8f0;"></div></div>
-        <input type="email" id="ci-gpt-email" placeholder="Correo electrónico" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
-        <button id="ci-gpt-email-btn" style="padding:10px;border:none;border-radius:8px;background:#f97316;color:#fff;font-weight:600;cursor:pointer;">Continuar con correo electrónico</button>
-        <label style="font-size:12px;color:#475569;"><input type="checkbox" id="ci-gpt-terms"> Acepto los <a href="/terminos" target="_blank">Términos de Servicio</a> y la <a href="/privacidad" target="_blank">Política de Privacidad</a></label>
+        <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#64748b;"><span style="flex:1;height:1px;background:#e2e8f0;"></span>o<span style="flex:1;height:1px;background:#e2e8f0;"></span></div>
+        <input type="email" id="ci-gpt-email" placeholder="Correo electrónico" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;width:100%;">
+        <button id="ci-gpt-email-btn" style="padding:10px;border:none;border-radius:8px;background:#f97316;color:#fff;font-weight:600;cursor:pointer;width:100%;">Continuar con correo electrónico</button>
+        <label style="font-size:12px;color:#475569;line-height:1.4;"><input type="checkbox" id="ci-gpt-terms"> Acepto los <a href="/terminos" target="_blank">Términos de Servicio</a> y la <a href="/privacidad" target="_blank">Política de Privacidad</a></label>
       </div>`;
     overlay.appendChild(mid);
 
     const footer = document.createElement('div');
     footer.style.cssText = 'text-align:center;font-size:12px;color:#475569;padding:16px;background:#f8fafc;';
-    footer.innerHTML = '© 2025 Consultoría Informática. NET<br><a href="/política-de-cookies" target="_blank">Política de Cookies</a> | <a href="/política-de-privacidad" target="_blank">Política de Privacidad</a> | <a href="/aviso-legal" target="_blank">Aviso Legal</a>';
+    footer.innerHTML = '<div class="footer-html-inner"><p>© 2025 consultoriainformatica.net</p><p><a href="https://consultoriainformatica.net/politica-de-cookies/" target="_blank" rel="nofollow noopener noreferrer">Política de Cookies</a> |<br><a href="https://consultoriainformatica.net/politica-privacidad/" target="_blank" rel="nofollow noopener noreferrer">Política de Privacidad</a> |<br><a href="https://consultoriainformatica.net/aviso-legal/" target="_blank" rel="nofollow noopener noreferrer">Aviso Legal</a></p></div>';
     overlay.appendChild(footer);
 
     const closeBtn = overlay.querySelector('#ci-gpt-close');
