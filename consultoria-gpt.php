@@ -211,23 +211,23 @@ add_shortcode('consultoria_gpt', function() {
     header.innerHTML = `
       <button id="ci-gpt-close" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#fff;font-size:24px;line-height:1;cursor:pointer;">×</button>
       ${logoUrl ? `<img src="${logoUrl}" alt="logo" style="width:64px;height:64px;border-radius:8px;object-fit:cover;display:block;margin:0 auto 8px;">` : ''}
-      <span style="font-size:20px;font-weight:600;display:block;">Empieza gratis</span>
+      <span style="font-size:20px;font-weight:600;display:block;">Empieza gratis a usar nuestro agente de IA, experto en tecnología</span>
     `;
     overlay.appendChild(header);
 
     const mid = document.createElement('div');
     mid.style.cssText = 'flex:1;padding:24px;display:flex;justify-content:center;align-items:center;';
-    mid.innerHTML = `<div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px;font-family:\'Poppins\',sans-serif;color:#0f172a;">
-        <div id="ci-gpt-google" style="width:100%;"></div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#64748b;"><span style="flex:1;height:1px;background:#e2e8f0;"></span>o<span style="flex:1;height:1px;background:#e2e8f0;"></span></div>
-        <input type="email" id="ci-gpt-email" placeholder="Correo electrónico" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;width:100%;">
-        <button id="ci-gpt-email-btn" style="padding:10px;border:none;border-radius:8px;background:#f97316;color:#fff;font-weight:600;cursor:pointer;width:100%;">Continuar con correo electrónico</button>
-        <label style="font-size:12px;color:#475569;line-height:1.4;"><input type="checkbox" id="ci-gpt-terms"> Acepto los <a href="/terminos" target="_blank">Términos de Servicio</a> y la <a href="/privacidad" target="_blank">Política de Privacidad</a></label>
+    mid.innerHTML = `<div style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:16px;font-family:\'Poppins\',sans-serif;color:#0f172a;">
+        <div id="ci-gpt-google" style="width:100%;max-width:400px;"></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:16px;color:#64748b;max-width:400px;"><span style="flex:1;height:1px;background:#e2e8f0;"></span>o<span style="flex:1;height:1px;background:#e2e8f0;"></span></div>
+        <input type="email" id="ci-gpt-email" placeholder="Correo electrónico" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;width:100%;max-width:400px;font-size:16px;">
+        <button id="ci-gpt-email-btn" style="padding:10px;border:none;border-radius:8px;background:#f97316;color:#fff;font-weight:600;cursor:pointer;width:100%;max-width:400px;font-size:16px;">Continuar con correo electrónico</button>
+        <label style="font-size:16px;color:#475569;line-height:1.4;max-width:400px;"><input type="checkbox" id="ci-gpt-terms"> Acepto los <a href="/terminos" target="_blank">Términos de Servicio</a> y la <a href="/privacidad" target="_blank">Política de Privacidad</a></label>
       </div>`;
     overlay.appendChild(mid);
 
     const footer = document.createElement('div');
-    footer.style.cssText = 'text-align:center;font-size:12px;color:#475569;padding:16px;background:#f8fafc;';
+    footer.style.cssText = 'text-align:center;font-size:16px;color:#475569;padding:16px;background:#f8fafc;';
     footer.innerHTML = '<div class="footer-html-inner"><p>© 2025 consultoriainformatica.net</p><p><a href="https://consultoriainformatica.net/politica-de-cookies/" target="_blank" rel="nofollow noopener noreferrer">Política de Cookies</a> |<br><a href="https://consultoriainformatica.net/politica-privacidad/" target="_blank" rel="nofollow noopener noreferrer">Política de Privacidad</a> |<br><a href="https://consultoriainformatica.net/aviso-legal/" target="_blank" rel="nofollow noopener noreferrer">Aviso Legal</a></p></div>';
     overlay.appendChild(footer);
 
