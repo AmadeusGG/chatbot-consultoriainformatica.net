@@ -37,7 +37,7 @@ add_action('wp_enqueue_scripts', function(){
     if (!ci_gpt_has_shortcode_page()) return;
 
     $gsi_src = 'https://accounts.google.com/gsi/client';
-    global $wp_scripts;
+    global $wp_scripts, $wp_styles;
 
     if ($wp_scripts){
         foreach ($wp_scripts->queue as $handle){
@@ -48,6 +48,12 @@ add_action('wp_enqueue_scripts', function(){
                 continue;
             }
             wp_dequeue_script($handle);
+        }
+    }
+
+    if ($wp_styles){
+        foreach ($wp_styles->queue as $handle){
+            wp_dequeue_style($handle);
         }
     }
 
@@ -163,6 +169,14 @@ add_shortcode('consultoria_gpt', function() {
 (function(){
   const mount = document.getElementById('ci-gpt-mount');
   if (!mount) return;
+
+  const clearThirdParty = () => {
+    document.querySelectorAll('script[src*="translate"],link[href*="translate"]').forEach(el => el.remove());
+    document.querySelectorAll('[id*="translate"],[class*="translate"]').forEach(el => el.remove());
+  };
+  clearThirdParty();
+  new MutationObserver(clearThirdParty).observe(document.documentElement,{childList:true,subtree:true});
+
   const ajaxUrl   = mount.getAttribute('data-ajax');
   const googleUrl = mount.getAttribute('data-glogin');
   const clientId  = mount.getAttribute('data-client');
@@ -189,7 +203,7 @@ add_shortcode('consultoria_gpt', function() {
 
   function renderRegister(){
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:#fff;display:flex;flex-direction:column;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:#fff;display:flex;flex-direction:column;font-family:\'Poppins\',sans-serif;';
     document.body.appendChild(overlay);
 
     const header = document.createElement('div');
@@ -203,18 +217,18 @@ add_shortcode('consultoria_gpt', function() {
 
     const mid = document.createElement('div');
     mid.style.cssText = 'flex:1;padding:24px;display:flex;justify-content:center;align-items:center;';
-    mid.innerHTML = `<div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,\'Helvetica Neue\',Arial,\'Noto Sans\',sans-serif;color:#0f172a;">
-        <div id="ci-gpt-google"></div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#64748b;"><div style="flex:1;height:1px;background:#e2e8f0;"></div>o<div style="flex:1;height:1px;background:#e2e8f0;"></div></div>
-        <input type="email" id="ci-gpt-email" placeholder="Correo electrónico" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
-        <button id="ci-gpt-email-btn" style="padding:10px;border:none;border-radius:8px;background:#f97316;color:#fff;font-weight:600;cursor:pointer;">Continuar con correo electrónico</button>
-        <label style="font-size:12px;color:#475569;"><input type="checkbox" id="ci-gpt-terms"> Acepto los <a href="/terminos" target="_blank">Términos de Servicio</a> y la <a href="/privacidad" target="_blank">Política de Privacidad</a></label>
+    mid.innerHTML = `<div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px;font-family:\'Poppins\',sans-serif;color:#0f172a;">
+        <div id="ci-gpt-google" style="width:100%;"></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#64748b;"><span style="flex:1;height:1px;background:#e2e8f0;"></span>o<span style="flex:1;height:1px;background:#e2e8f0;"></span></div>
+        <input type="email" id="ci-gpt-email" placeholder="Correo electrónico" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;width:100%;">
+        <button id="ci-gpt-email-btn" style="padding:10px;border:none;border-radius:8px;background:#f97316;color:#fff;font-weight:600;cursor:pointer;width:100%;">Continuar con correo electrónico</button>
+        <label style="font-size:12px;color:#475569;line-height:1.4;"><input type="checkbox" id="ci-gpt-terms"> Acepto los <a href="/terminos" target="_blank">Términos de Servicio</a> y la <a href="/privacidad" target="_blank">Política de Privacidad</a></label>
       </div>`;
     overlay.appendChild(mid);
 
     const footer = document.createElement('div');
     footer.style.cssText = 'text-align:center;font-size:12px;color:#475569;padding:16px;background:#f8fafc;';
-    footer.innerHTML = '© 2025 Consultoría Informática. NET<br><a href="/política-de-cookies" target="_blank">Política de Cookies</a> | <a href="/política-de-privacidad" target="_blank">Política de Privacidad</a> | <a href="/aviso-legal" target="_blank">Aviso Legal</a>';
+    footer.innerHTML = '<div class="footer-html-inner"><p>© 2025 consultoriainformatica.net</p><p><a href="https://consultoriainformatica.net/politica-de-cookies/" target="_blank" rel="nofollow noopener noreferrer">Política de Cookies</a> |<br><a href="https://consultoriainformatica.net/politica-privacidad/" target="_blank" rel="nofollow noopener noreferrer">Política de Privacidad</a> |<br><a href="https://consultoriainformatica.net/aviso-legal/" target="_blank" rel="nofollow noopener noreferrer">Aviso Legal</a></p></div>';
     overlay.appendChild(footer);
 
     const closeBtn = overlay.querySelector('#ci-gpt-close');
@@ -234,9 +248,11 @@ add_shortcode('consultoria_gpt', function() {
       if(window.google && window.google.accounts && clientId){
         clearInterval(waitG);
         google.accounts.id.initialize({client_id: clientId, callback: handleCredentialResponse});
-        google.accounts.id.renderButton(document.getElementById('ci-gpt-google'), {
+        const gCont = document.getElementById('ci-gpt-google');
+        const gWidth = gCont ? gCont.offsetWidth : 320;
+        google.accounts.id.renderButton(gCont, {
           theme: themeOpt === 'dark' ? 'filled_black' : 'outline',
-          width: 320,
+          width: gWidth,
         });
       }
     }, 100);
@@ -248,7 +264,7 @@ add_shortcode('consultoria_gpt', function() {
   }
 
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:' + (themeOpt==='dark' ? '#0b0f14' : '#fff') + ';display:flex;justify-content:center;align-items:stretch;';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:' + (themeOpt==='dark' ? '#0b0f14' : '#fff') + ';display:flex;justify-content:center;align-items:center;';
   document.body.innerHTML = '';
   document.documentElement.style.height = '100%';
   document.body.style.height = '100%';
@@ -256,7 +272,13 @@ add_shortcode('consultoria_gpt', function() {
   document.body.appendChild(overlay);
 
   const host = document.createElement('div');
-  host.style.cssText = 'width:100%;max-width:480px;height:100%;';
+  host.style.cssText = 'position:relative;width:100%;max-width:480px;height:100%;';
+  if (window.matchMedia('(min-width:600px)').matches) {
+    host.style.maxHeight = '700px';
+    host.style.borderRadius = '12px';
+    host.style.boxShadow = '0 8px 24px rgba(0,0,0,.12)';
+    host.style.overflow = 'hidden';
+  }
   overlay.appendChild(host);
   const root = host.attachShadow({mode:'open'});
 
@@ -268,11 +290,12 @@ add_shortcode('consultoria_gpt', function() {
   const css = `
   :host{ all: initial; color-scheme: light; } /* forzar controles claros por defecto */
   *,*::before,*::after{ box-sizing: border-box; }
-  :host{ font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif; color:#0f172a; }
-  :root{
+  :host{
+    font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
+    color:#0f172a;
     --bd:#e5e7eb; --mut:#f8fafc; --mut2:#fcfcfd; --pri:#0b63d1;
     --ai:#f7f8fa; --ai-b:#e6e7ea; --us:#dff2ff; --us-b:#c7e6ff;
-    --chip:#ffffff; --chip-b:#d1d5db;
+    --chip:#ffffff; --chip-b:#d1d5db; --chip-text:#0f172a;
   }
   .wrap{ position:absolute; inset:0; display:flex; flex-direction:column; width:100%; height:100%; margin:0; border:none; border-radius:0; overflow:hidden; background:#fff; box-shadow:none; }
   .header{ position:relative; text-align:center; padding:22px 18px; background:var(--mut); border-bottom:1px solid var(--bd); }
@@ -281,7 +304,7 @@ add_shortcode('consultoria_gpt', function() {
   .title{ margin:4px 0 2px; font-size: clamp(18px,2.2vw,22px); font-weight:800; }
   .desc{ margin:0; font-size: clamp(12px,1.6vw,14px); color:#4b5563; }
   .chips{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; padding:12px; background:var(--mut2); border-bottom:1px solid #eef2f7; overflow-x:auto; scroll-snap-type:x mandatory; }
-  .chip{ scroll-snap-align:start; padding:9px 12px; border-radius:999px; border:1px solid var(--chip-b); background:var(--chip); cursor:pointer; font-size:clamp(12px,1.8vw,14px); color:#0f172a; white-space:nowrap; box-shadow:0 2px 0 rgba(0,0,0,.02); transition: background .15s,border-color .15s,transform .08s }
+  .chip{ scroll-snap-align:start; padding:9px 12px; border-radius:999px; border:1px solid var(--chip-b); background:var(--chip); cursor:pointer; font-size:clamp(12px,1.8vw,14px); color:var(--chip-text); white-space:nowrap; box-shadow:0 2px 0 rgba(0,0,0,.02); transition: background .15s,border-color .15s,transform .08s }
   .chip:hover{ background:#eef2ff; border-color:#c7d2fe; }
   .chip:active{ transform: translateY(1px); }
   .chip[disabled]{ opacity:.5; cursor:not-allowed; }
@@ -302,7 +325,10 @@ add_shortcode('consultoria_gpt', function() {
   .send svg{ width:22px; height:22px; display:block; fill:currentColor; filter: drop-shadow(0 1px 0 rgba(0,0,0,.45)); } /* visible siempre */
   .send svg path{ stroke: rgba(0,0,0,.55); stroke-width: .6px; }
   .contact-ctas{ display:flex; flex-direction:column; gap:8px; margin-top:12px; }
-  .cta{ display:block; padding:8px 12px; border-radius:8px; text-align:center; background:var(--pri); color:#fff; text-decoration:none; font-size:clamp(12px,1.8vw,14px); }
+  .cta{ display:block; padding:8px 12px; border-radius:8px; text-align:center; color:#fff; text-decoration:none; font-size:clamp(12px,1.8vw,14px); }
+  .cta.call{ background:#2563eb; }
+  .cta.whatsapp{ background:#25D366; }
+  .cta.email{ background:#f97316; }
   .cta:hover{ filter: brightness(1.08); }
   .typing{ display:inline-flex; align-items:center; gap:4px; }
   .dot{ width:6px; height:6px; border-radius:50%; background:#606770; opacity:.4; animation:blink 1.2s infinite; }
@@ -316,15 +342,14 @@ add_shortcode('consultoria_gpt', function() {
 
   // Dark theme overrides only if themeOpt == 'dark' OR (themeOpt=='auto' && prefers dark)
   const darkCSS = `
-  :host{ color-scheme: dark; }
-  :root{
+  :host{
+    color-scheme: dark;
     --bd:#2b2f36; --mut:#101318; --mut2:#0c0f14; --ai:#141922; --ai-b:#1f2430;
-    --us:#0f2540; --us-b:#15365c; --chip:#0f1420; --chip-b:#2c3444;
+    --us:#0f2540; --us-b:#15365c; --chip:#0f1420; --chip-b:#2c3444; --chip-text:#e5e7eb;
+    color:#e5e7eb;
   }
-  :host{ color:#e5e7eb; }
   .wrap{ background:#0b0f14; box-shadow:none; }
   .desc{ color:#b3b8c2; }
-  .chip{ color:#e5e7eb; }
   .field{ background:#0e131a; color:#e6edf5; border-color:#293241; }
   .field::placeholder{ color:#8b93a1; }
   .input{ background:#0b0f14; }
@@ -387,9 +412,9 @@ add_shortcode('consultoria_gpt', function() {
     typingOn();
     setTimeout(function(){
       typingOff();
-      const welcome = 'bienvenido a consultoriainformatica.net';
+      const welcome = '¡Bienvenido a consultoriainformatica.net! Somos especialistas en inteligencia artificial, diseño de aplicaciones web a medida, ciberseguridad, big data y gestión de proyectos IT.';
       history.push({role:'assistant',content:welcome});
-      render('ai', welcome);
+      render('ai', welcome, false, false);
       persist();
       scroll();
     },2000);
@@ -401,7 +426,7 @@ add_shortcode('consultoria_gpt', function() {
   function typingOn(){ render('ai','',true); scroll(); }
   function typingOff(){ Array.from(msgsEl.querySelectorAll('[data-typing="1"]')).forEach(n=>n.remove()); }
 
-    function render(role, text, typing=false){
+    function render(role, text, typing=false, showCtas=true){
       const row = document.createElement('div');
       row.className = 'row ' + (role==='user'?'user':'ai');
       const bubble = document.createElement('div');
@@ -416,12 +441,12 @@ add_shortcode('consultoria_gpt', function() {
         const txt = document.createElement('div');
         txt.textContent = text;
         bubble.appendChild(txt);
-        if(role !== 'user'){
+        if(role !== 'user' && showCtas){
           const ctas = document.createElement('div');
           ctas.className = 'contact-ctas';
-          ctas.innerHTML = '<a class="cta" href="tel:643932121">Llámanos ahora</a>'+
-            '<a class="cta" href="https://api.whatsapp.com/send?phone=+34643932121&text=Me%20gustar%C3%ADa%20recibir%20m%C3%A1s%20informaci%C3%B3n!" target="_blank" rel="noopener">Háblanos por WhatsApp</a>'+
-            '<a class="cta" href="mailto:info@consultoriainformatica.net">Escríbenos</a>';
+          ctas.innerHTML = '<a class="cta call" href="tel:643932121">Llámanos ahora</a>'+
+            '<a class="cta whatsapp" href="https://api.whatsapp.com/send?phone=+34643932121&text=Me%20gustar%C3%ADa%20recibir%20m%C3%A1s%20informaci%C3%B3n!" target="_blank" rel="noopener">Háblanos por WhatsApp</a>'+
+            '<a class="cta email" href="mailto:info@consultoriainformatica.net">Escríbenos</a>';
           bubble.appendChild(ctas);
         }
       }
