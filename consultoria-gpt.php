@@ -280,10 +280,16 @@ add_shortcode('consultoria_gpt', function() {
     const mid = document.createElement('div');
     mid.style.cssText = 'flex:1;padding:24px;display:flex;justify-content:center;align-items:center;';
     mid.innerHTML = `<div style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:16px;font-family:\'Poppins\',sans-serif;color:#0f172a;">
-        <label style="font-size:16px;color:#475569;line-height:1.4;max-width:400px;box-sizing:border-box;"><input type="checkbox" id="ci-gpt-terms" required> Acepto los <a href="https://consultoriainformatica.net/terminos-de-servicio-agente-ia-gratis/" target="_blank">Términos de Servicio</a> y la <a href="https://consultoriainformatica.net/politica-privacidad/" target="_blank">Política de Privacidad</a></label>
+        <label style="font-size:16px;color:#475569;line-height:1.4;max-width:400px;box-sizing:border-box;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="ci-gpt-terms" required> Acepto los <a href="https://consultoriainformatica.net/terminos-de-servicio-agente-ia-gratis/" target="_blank">Términos de Servicio</a> y la <a href="https://consultoriainformatica.net/politica-privacidad/" target="_blank">Política de Privacidad</a></label>
         <div id="ci-gpt-google" style="width:100%;max-width:400px;box-sizing:border-box;"></div>
       </div>`;
     overlay.appendChild(mid);
+
+    const style = document.createElement('style');
+    style.textContent = `#ci-gpt-terms{transform:scale(1.5);accent-color:#2563eb;filter:drop-shadow(0 0 2px #2563eb);animation:ciTermsPulse 1s infinite alternate;}
+    @media(max-width:768px){#ci-gpt-terms{transform:scale(2);}}
+    @keyframes ciTermsPulse{from{filter:drop-shadow(0 0 2px #2563eb);}to{filter:drop-shadow(0 0 6px #2563eb);}}`;
+    overlay.appendChild(style);
 
     const footer = document.createElement('div');
     footer.style.cssText = 'text-align:center;font-size:16px;color:#475569;padding:16px;background:#f8fafc;';
@@ -301,6 +307,9 @@ add_shortcode('consultoria_gpt', function() {
       if(gCont){
         gCont.style.opacity = enabled ? '1' : '.5';
         gCont.style.pointerEvents = enabled ? 'auto' : 'none';
+      }
+      if(terms && enabled){
+        terms.style.animation = 'none';
       }
     }
     toggleAuth();
@@ -479,7 +488,7 @@ add_shortcode('consultoria_gpt', function() {
     typingOn();
     setTimeout(function(){
       typingOff();
-      const welcome = '¡Bienvenido a consultoriainformatica.net! Somos especialistas en inteligencia artificial, diseño de aplicaciones web a medida, ciberseguridad, big data y gestión de proyectos IT.';
+      const welcome = '¡Hola! Soy tu agente de Inteligencia Artificial experto en tecnología. Estoy aquí para ayudarte a resolver cualquier duda que tengas sobre informática, internet, inteligencia artificial, seguridad o herramientas digitales. Escríbeme tu pregunta y te responderé al instante.';
       history.push({role:'assistant',content:welcome});
       render('ai', welcome, false, false);
       persist();
