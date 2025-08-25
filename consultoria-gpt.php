@@ -249,7 +249,7 @@ add_shortcode('consultoria_gpt', function() {
         clearInterval(waitG);
         google.accounts.id.initialize({client_id: clientId, callback: handleCredentialResponse});
         const gCont = document.getElementById('ci-gpt-google');
-        const gWidth = gCont ? gCont.clientWidth - 2 : 320;
+        const gWidth = gCont ? gCont.clientWidth : 320;
         google.accounts.id.renderButton(gCont, {
           theme: themeOpt === 'dark' ? 'filled_black' : 'outline',
           width: gWidth,
@@ -272,7 +272,7 @@ add_shortcode('consultoria_gpt', function() {
   document.body.appendChild(overlay);
 
   const host = document.createElement('div');
-  host.style.cssText = 'position:relative;width:100%;max-width:480px;height:100%;';
+  host.style.cssText = 'position:relative;width:100%;max-width:1000px;height:100%;';
   if (window.matchMedia('(min-width:600px)').matches) {
     host.style.maxHeight = '700px';
     host.style.borderRadius = '12px';
@@ -324,8 +324,11 @@ add_shortcode('consultoria_gpt', function() {
   .send[disabled]{ opacity:.6; cursor:not-allowed; }
   .send svg{ width:22px; height:22px; display:block; fill:currentColor; filter: drop-shadow(0 1px 0 rgba(0,0,0,.45)); } /* visible siempre */
   .send svg path{ stroke: rgba(0,0,0,.55); stroke-width: .6px; }
-  .contact-ctas{ display:flex; flex-direction:column; gap:8px; margin-top:12px; }
-  .cta{ display:block; padding:8px 12px; border-radius:8px; text-align:center; color:#fff; text-decoration:none; font-size:clamp(12px,1.8vw,14px); }
+  .contact-ctas{ margin-top:12px; }
+  .contact-ctas .row{ display:flex; flex-wrap:wrap; gap:8px; margin:0; }
+  .contact-ctas .col{ flex:1 0 100%; }
+  @media(min-width:768px){ .contact-ctas .col{ flex:0 0 calc(33.333% - 8px); } }
+  .cta{ display:block; width:100%; padding:8px 12px; border-radius:8px; text-align:center; color:#fff; text-decoration:none; font-size:clamp(12px,1.8vw,14px); }
   .cta.call{ background:#2563eb; }
   .cta.whatsapp{ background:#25D366; }
   .cta.email{ background:#f97316; }
@@ -426,6 +429,21 @@ add_shortcode('consultoria_gpt', function() {
   function typingOn(){ render('ai','',true); scroll(); }
   function typingOff(){ Array.from(msgsEl.querySelectorAll('[data-typing="1"]')).forEach(n=>n.remove()); }
 
+  function typeText(el, text, done){
+    let i = 0;
+    const speed = 40;
+    (function add(){
+      el.textContent += text.charAt(i);
+      i++;
+      scroll();
+      if(i < text.length){
+        setTimeout(add, speed);
+      } else if(done){
+        done();
+      }
+    })();
+  }
+
     function render(role, text, typing=false, showCtas=true){
       const row = document.createElement('div');
       row.className = 'row ' + (role==='user'?'user':'ai');
@@ -439,15 +457,22 @@ add_shortcode('consultoria_gpt', function() {
         bubble.appendChild(t);
       } else {
         const txt = document.createElement('div');
-        txt.textContent = text;
         bubble.appendChild(txt);
-        if(role !== 'user' && showCtas){
-          const ctas = document.createElement('div');
-          ctas.className = 'contact-ctas';
-          ctas.innerHTML = '<a class="cta call" href="tel:643932121">Llámanos ahora</a>'+
-            '<a class="cta whatsapp" href="https://api.whatsapp.com/send?phone=+34643932121&text=Me%20gustar%C3%ADa%20recibir%20m%C3%A1s%20informaci%C3%B3n!" target="_blank" rel="noopener">Háblanos por WhatsApp</a>'+
-            '<a class="cta email" href="mailto:info@consultoriainformatica.net">Escríbenos</a>';
-          bubble.appendChild(ctas);
+        if(role === 'ai'){
+          typeText(txt, text, () => {
+            if(showCtas){
+              const ctas = document.createElement('div');
+              ctas.className = 'contact-ctas';
+              ctas.innerHTML = '<div class="row">'+
+                '<div class="col"><a class="cta call" href="tel:643932121">Llámanos ahora</a></div>'+
+                '<div class="col"><a class="cta whatsapp" href="https://api.whatsapp.com/send?phone=+34643932121&text=Me%20gustar%C3%ADa%20recibir%20m%C3%A1s%20informaci%C3%B3n!" target="_blank" rel="noopener">Háblanos por WhatsApp</a></div>'+
+                '<div class="col"><a class="cta email" href="mailto:info@consultoriainformatica.net">Escríbenos</a></div>'+
+              '</div>';
+              bubble.appendChild(ctas);
+            }
+          });
+        } else {
+          txt.textContent = text;
         }
       }
       row.appendChild(bubble);
