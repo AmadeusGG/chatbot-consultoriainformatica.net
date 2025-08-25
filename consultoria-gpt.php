@@ -2,7 +2,7 @@
 /*
 Plugin Name: Consultoria GPT
 Description: Asistente IA (estilo ChatGPT) para consultoriainformatica.net. Shortcode: [consultoria_gpt]
-Version: 1.7
+Version: 1.8
 Author: Amadeo
 */
 
@@ -11,6 +11,20 @@ if (!defined('ABSPATH')) exit;
 // Register a restricted role for chatbot users
 register_activation_hook(__FILE__, function(){
     add_role('ci_gpt_user', 'Consultoria GPT', ['read' => true]);
+    global $wpdb;
+    $table = $wpdb->prefix . 'ci_gpt_logs';
+    $charset = $wpdb->get_charset_collate();
+    $sql = "CREATE TABLE $table (
+        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        email varchar(190) NOT NULL,
+        user_msg longtext NOT NULL,
+        bot_reply longtext NOT NULL,
+        created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY  (id),
+        KEY email (email)
+    ) $charset;";
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    dbDelta($sql);
 });
 
 // Prevent chatbot users from accessing the dashboard
@@ -62,6 +76,12 @@ add_action('wp_enqueue_scripts', function(){
         wp_script_add_data('ci-gsi', 'async', true);
         wp_script_add_data('ci-gsi', 'defer', true);
     }
+
+    if (function_exists('googlesitekit_enqueue_gtag')) {
+        googlesitekit_enqueue_gtag();
+    } else {
+        do_action('googlesitekit_enqueue_gtag');
+    }
 }, PHP_INT_MAX);
 
 /* =========================
@@ -71,6 +91,7 @@ add_action('admin_menu', function() {
     add_menu_page('Consultoria GPT', 'Consultoria GPT', 'manage_options', 'consultoria-gpt', 'ci_gpt_settings_page', 'dashicons-format-chat');
     add_submenu_page('consultoria-gpt', 'Ajustes', 'Ajustes', 'manage_options', 'consultoria-gpt', 'ci_gpt_settings_page');
     add_submenu_page('consultoria-gpt', 'Shortcode', 'Shortcode', 'manage_options', 'consultoria-gpt-shortcode', 'ci_gpt_shortcode_page');
+    add_submenu_page('consultoria-gpt', 'Log de conversaciones', 'Log de conversaciones', 'manage_options', 'consultoria-gpt-logs', 'ci_gpt_logs_page');
 });
 
 add_action('admin_init', function() {
@@ -147,6 +168,42 @@ function ci_gpt_shortcode_page() { ?>
     </div>
 <?php }
 
+function ci_gpt_logs_page() {
+    global $wpdb;
+    $table = $wpdb->prefix . 'ci_gpt_logs';
+    echo '<div class="wrap"><h1>Log de conversaciones</h1>';
+    if (isset($_GET['email'])) {
+        $email = sanitize_email($_GET['email']);
+        echo '<p><a href="' . esc_url(admin_url('admin.php?page=consultoria-gpt-logs')) . '">&laquo; Volver</a></p>';
+        $rows = $wpdb->get_results($wpdb->prepare("SELECT user_msg, bot_reply, created FROM $table WHERE email = %s ORDER BY created ASC", $email));
+        if ($rows) {
+            echo '<h2>' . esc_html($email) . '</h2>';
+            foreach ($rows as $row) {
+                echo '<div style="margin-bottom:16px;padding:12px;border:1px solid #ccc;border-radius:6px;">';
+                echo '<p><strong>Usuario:</strong> ' . esc_html($row->user_msg) . '</p>';
+                echo '<p><strong>ChatGPT:</strong> ' . esc_html($row->bot_reply) . '</p>';
+                echo '<p style="font-size:12px;color:#666;">' . esc_html($row->created) . '</p>';
+                echo '</div>';
+            }
+        } else {
+            echo '<p>No hay registros para este email.</p>';
+        }
+    } else {
+        $emails = $wpdb->get_col("SELECT DISTINCT email FROM $table ORDER BY email ASC");
+        if ($emails) {
+            echo '<table class="widefat striped"><thead><tr><th>Email</th></tr></thead><tbody>';
+            foreach ($emails as $mail) {
+                $url = admin_url('admin.php?page=consultoria-gpt-logs&email=' . urlencode($mail));
+                echo '<tr><td><a href="' . esc_url($url) . '">' . esc_html($mail) . '</a></td></tr>';
+            }
+            echo '</tbody></table>';
+        } else {
+            echo '<p>No hay conversaciones registradas.</p>';
+        }
+    }
+    echo '</div>';
+}
+
 /* =========================
  *  FRONTEND (SHORTCODE) — Shadow DOM aislado
  * ========================= */
@@ -185,6 +242,11 @@ add_shortcode('consultoria_gpt', function() {
   const authed    = localStorage.getItem('ci-gpt-auth') === '1';
 
   function handleCredentialResponse(res){
+    const terms = document.querySelector('#ci-gpt-terms');
+    if(!terms || !terms.checked){
+      alert('Debes aceptar los términos');
+      return;
+    }
     if(!res || !res.credential || !googleUrl) return;
     const form = new FormData();
     form.append('id_token', res.credential);
@@ -222,7 +284,7 @@ add_shortcode('consultoria_gpt', function() {
         <div style="display:flex;align-items:center;gap:8px;font-size:16px;color:#64748b;max-width:400px;box-sizing:border-box;"><span style="flex:1;height:1px;background:#e2e8f0;"></span>o<span style="flex:1;height:1px;background:#e2e8f0;"></span></div>
         <input type="email" id="ci-gpt-email" placeholder="Correo electrónico" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;width:100%;max-width:400px;font-size:16px;box-sizing:border-box;">
         <button id="ci-gpt-email-btn" style="padding:10px;border:none;border-radius:8px;background:#f97316;color:#fff;font-weight:600;cursor:pointer;width:100%;max-width:400px;font-size:16px;box-sizing:border-box;">Continuar con correo electrónico</button>
-        <label style="font-size:16px;color:#475569;line-height:1.4;max-width:400px;box-sizing:border-box;"><input type="checkbox" id="ci-gpt-terms"> Acepto los <a href="/terminos" target="_blank">Términos de Servicio</a> y la <a href="/privacidad" target="_blank">Política de Privacidad</a></label>
+        <label style="font-size:16px;color:#475569;line-height:1.4;max-width:400px;box-sizing:border-box;"><input type="checkbox" id="ci-gpt-terms" required> Acepto los <a href="https://consultoriainformatica.net/terminos-de-servicio-agente-ia-gratis/" target="_blank">Términos de Servicio</a> y la <a href="https://consultoriainformatica.net/politica-privacidad/" target="_blank">Política de Privacidad</a></label>
       </div>`;
     overlay.appendChild(mid);
 
@@ -234,9 +296,28 @@ add_shortcode('consultoria_gpt', function() {
     const closeBtn = overlay.querySelector('#ci-gpt-close');
     if (closeBtn) closeBtn.addEventListener('click', () => { window.location.href = '/'; });
 
+    const terms = overlay.querySelector('#ci-gpt-terms');
     const emailBtn = overlay.querySelector('#ci-gpt-email-btn');
+    const gCont = overlay.querySelector('#ci-gpt-google');
+
+    function toggleAuthBtns(){
+      const enabled = terms && terms.checked;
+      if(emailBtn){
+        emailBtn.disabled = !enabled;
+        emailBtn.style.opacity = enabled ? '1' : '.5';
+        emailBtn.style.pointerEvents = enabled ? 'auto' : 'none';
+      }
+      if(gCont){
+        gCont.style.opacity = enabled ? '1' : '.5';
+        gCont.style.pointerEvents = enabled ? 'auto' : 'none';
+      }
+    }
+    toggleAuthBtns();
+    if(terms){
+      terms.addEventListener('change', toggleAuthBtns);
+    }
+
     if (emailBtn) emailBtn.addEventListener('click', () => {
-      const terms = overlay.querySelector('#ci-gpt-terms');
       const email = overlay.querySelector('#ci-gpt-email');
       if (!terms || !terms.checked) { alert('Debes aceptar los términos'); return; }
       if (!email || !email.value) { alert('Introduce un correo'); return; }
@@ -248,12 +329,12 @@ add_shortcode('consultoria_gpt', function() {
       if(window.google && window.google.accounts && clientId){
         clearInterval(waitG);
         google.accounts.id.initialize({client_id: clientId, callback: handleCredentialResponse});
-        const gCont = document.getElementById('ci-gpt-google');
-        const gWidth = gCont ? gCont.clientWidth - 2 : 320;
+        const gWidth = gCont ? gCont.clientWidth : 320;
         google.accounts.id.renderButton(gCont, {
           theme: themeOpt === 'dark' ? 'filled_black' : 'outline',
           width: gWidth,
         });
+        toggleAuthBtns();
       }
     }, 100);
   }
@@ -272,7 +353,7 @@ add_shortcode('consultoria_gpt', function() {
   document.body.appendChild(overlay);
 
   const host = document.createElement('div');
-  host.style.cssText = 'position:relative;width:100%;max-width:480px;height:100%;';
+  host.style.cssText = 'position:relative;width:100%;max-width:1000px;height:100%;';
   if (window.matchMedia('(min-width:600px)').matches) {
     host.style.maxHeight = '700px';
     host.style.borderRadius = '12px';
@@ -324,8 +405,11 @@ add_shortcode('consultoria_gpt', function() {
   .send[disabled]{ opacity:.6; cursor:not-allowed; }
   .send svg{ width:22px; height:22px; display:block; fill:currentColor; filter: drop-shadow(0 1px 0 rgba(0,0,0,.45)); } /* visible siempre */
   .send svg path{ stroke: rgba(0,0,0,.55); stroke-width: .6px; }
-  .contact-ctas{ display:flex; flex-direction:column; gap:8px; margin-top:12px; }
-  .cta{ display:block; padding:8px 12px; border-radius:8px; text-align:center; color:#fff; text-decoration:none; font-size:clamp(12px,1.8vw,14px); }
+  .contact-ctas{ margin-top:12px; }
+  .contact-ctas .row{ display:flex; flex-wrap:wrap; gap:8px; margin:0; }
+  .contact-ctas .col{ flex:1 0 100%; }
+  @media(min-width:768px){ .contact-ctas .col{ flex:0 0 calc(33.333% - 8px); } }
+  .cta{ display:block; width:100%; padding:8px 12px; border-radius:8px; text-align:center; color:#fff; text-decoration:none; font-size:clamp(12px,1.8vw,14px); }
   .cta.call{ background:#2563eb; }
   .cta.whatsapp{ background:#25D366; }
   .cta.email{ background:#f97316; }
@@ -426,6 +510,21 @@ add_shortcode('consultoria_gpt', function() {
   function typingOn(){ render('ai','',true); scroll(); }
   function typingOff(){ Array.from(msgsEl.querySelectorAll('[data-typing="1"]')).forEach(n=>n.remove()); }
 
+  function typeText(el, text, done){
+    let i = 0;
+    const speed = 27; // 40ms / 1.5 → 1.5x faster typing
+    (function add(){
+      el.textContent += text.charAt(i);
+      i++;
+      scroll();
+      if(i < text.length){
+        setTimeout(add, speed);
+      } else if(done){
+        done();
+      }
+    })();
+  }
+
     function render(role, text, typing=false, showCtas=true){
       const row = document.createElement('div');
       row.className = 'row ' + (role==='user'?'user':'ai');
@@ -439,15 +538,22 @@ add_shortcode('consultoria_gpt', function() {
         bubble.appendChild(t);
       } else {
         const txt = document.createElement('div');
-        txt.textContent = text;
         bubble.appendChild(txt);
-        if(role !== 'user' && showCtas){
-          const ctas = document.createElement('div');
-          ctas.className = 'contact-ctas';
-          ctas.innerHTML = '<a class="cta call" href="tel:643932121">Llámanos ahora</a>'+
-            '<a class="cta whatsapp" href="https://api.whatsapp.com/send?phone=+34643932121&text=Me%20gustar%C3%ADa%20recibir%20m%C3%A1s%20informaci%C3%B3n!" target="_blank" rel="noopener">Háblanos por WhatsApp</a>'+
-            '<a class="cta email" href="mailto:info@consultoriainformatica.net">Escríbenos</a>';
-          bubble.appendChild(ctas);
+        if(role === 'ai'){
+          typeText(txt, text, () => {
+            if(showCtas){
+              const ctas = document.createElement('div');
+              ctas.className = 'contact-ctas';
+              ctas.innerHTML = '<div class="row">'+
+                '<div class="col"><a class="cta call" href="tel:643932121">Llámanos ahora</a></div>'+
+                '<div class="col"><a class="cta whatsapp" href="https://api.whatsapp.com/send?phone=+34643932121&text=Me%20gustar%C3%ADa%20recibir%20m%C3%A1s%20informaci%C3%B3n!" target="_blank" rel="noopener">Háblanos por WhatsApp</a></div>'+
+                '<div class="col"><a class="cta email" href="mailto:info@consultoriainformatica.net">Escríbenos</a></div>'+
+              '</div>';
+              bubble.appendChild(ctas);
+            }
+          });
+        } else {
+          txt.textContent = text;
         }
       }
       row.appendChild(bubble);
@@ -570,6 +676,27 @@ function ci_gpt_chat() {
     if (!$reply) {
         echo json_encode(['reply'=>null, 'error'=>'Respuesta vacía de OpenAI.']);
         wp_die();
+    }
+
+    $user = wp_get_current_user();
+    $email = isset($user->user_email) ? $user->user_email : '';
+    if ($email) {
+        $lastUserMsg = '';
+        for ($i = count($messages) - 1; $i >= 0; $i--) {
+            if (isset($messages[$i]['role']) && $messages[$i]['role'] === 'user') {
+                $lastUserMsg = $messages[$i]['content'];
+                break;
+            }
+        }
+        if ($lastUserMsg !== '') {
+            global $wpdb;
+            $wpdb->insert($wpdb->prefix . 'ci_gpt_logs', [
+                'email' => $email,
+                'user_msg' => $lastUserMsg,
+                'bot_reply' => $reply,
+                'created' => current_time('mysql')
+            ], ['%s','%s','%s','%s']);
+        }
     }
 
     echo json_encode(['reply'=>$reply]);
