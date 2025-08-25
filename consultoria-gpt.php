@@ -296,9 +296,28 @@ add_shortcode('consultoria_gpt', function() {
     const closeBtn = overlay.querySelector('#ci-gpt-close');
     if (closeBtn) closeBtn.addEventListener('click', () => { window.location.href = '/'; });
 
+    const terms = overlay.querySelector('#ci-gpt-terms');
     const emailBtn = overlay.querySelector('#ci-gpt-email-btn');
+    const gCont = overlay.querySelector('#ci-gpt-google');
+
+    function toggleAuthBtns(){
+      const enabled = terms && terms.checked;
+      if(emailBtn){
+        emailBtn.disabled = !enabled;
+        emailBtn.style.opacity = enabled ? '1' : '.5';
+        emailBtn.style.pointerEvents = enabled ? 'auto' : 'none';
+      }
+      if(gCont){
+        gCont.style.opacity = enabled ? '1' : '.5';
+        gCont.style.pointerEvents = enabled ? 'auto' : 'none';
+      }
+    }
+    toggleAuthBtns();
+    if(terms){
+      terms.addEventListener('change', toggleAuthBtns);
+    }
+
     if (emailBtn) emailBtn.addEventListener('click', () => {
-      const terms = overlay.querySelector('#ci-gpt-terms');
       const email = overlay.querySelector('#ci-gpt-email');
       if (!terms || !terms.checked) { alert('Debes aceptar los términos'); return; }
       if (!email || !email.value) { alert('Introduce un correo'); return; }
@@ -316,6 +335,7 @@ add_shortcode('consultoria_gpt', function() {
           theme: themeOpt === 'dark' ? 'filled_black' : 'outline',
           width: gWidth,
         });
+        toggleAuthBtns();
       }
     }, 100);
   }
