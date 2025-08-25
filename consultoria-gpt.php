@@ -329,6 +329,7 @@ add_shortcode('consultoria_gpt', function() {
       if(window.google && window.google.accounts && clientId){
         clearInterval(waitG);
         google.accounts.id.initialize({client_id: clientId, callback: handleCredentialResponse});
+        const gCont = document.getElementById('ci-gpt-google');
         const gWidth = gCont ? gCont.clientWidth : 320;
         google.accounts.id.renderButton(gCont, {
           theme: themeOpt === 'dark' ? 'filled_black' : 'outline',
