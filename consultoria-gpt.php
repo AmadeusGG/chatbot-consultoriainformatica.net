@@ -482,7 +482,7 @@ add_shortcode('consultoria_gpt', function() {
 
   function typeText(el, text, done){
     let i = 0;
-    const speed = 40;
+    const speed = 27; // 40ms / 1.5 → 1.5x faster typing
     (function add(){
       el.textContent += text.charAt(i);
       i++;
