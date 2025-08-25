@@ -280,11 +280,8 @@ add_shortcode('consultoria_gpt', function() {
     const mid = document.createElement('div');
     mid.style.cssText = 'flex:1;padding:24px;display:flex;justify-content:center;align-items:center;';
     mid.innerHTML = `<div style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:16px;font-family:\'Poppins\',sans-serif;color:#0f172a;">
-        <div id="ci-gpt-google" style="width:100%;max-width:400px;box-sizing:border-box;"></div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:16px;color:#64748b;max-width:400px;box-sizing:border-box;"><span style="flex:1;height:1px;background:#e2e8f0;"></span>o<span style="flex:1;height:1px;background:#e2e8f0;"></span></div>
-        <input type="email" id="ci-gpt-email" placeholder="Correo electrónico" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;width:100%;max-width:400px;font-size:16px;box-sizing:border-box;">
-        <button id="ci-gpt-email-btn" style="padding:10px;border:none;border-radius:8px;background:#f97316;color:#fff;font-weight:600;cursor:pointer;width:100%;max-width:400px;font-size:16px;box-sizing:border-box;">Continuar con correo electrónico</button>
         <label style="font-size:16px;color:#475569;line-height:1.4;max-width:400px;box-sizing:border-box;"><input type="checkbox" id="ci-gpt-terms" required> Acepto los <a href="https://consultoriainformatica.net/terminos-de-servicio-agente-ia-gratis/" target="_blank">Términos de Servicio</a> y la <a href="https://consultoriainformatica.net/politica-privacidad/" target="_blank">Política de Privacidad</a></label>
+        <div id="ci-gpt-google" style="width:100%;max-width:400px;box-sizing:border-box;"></div>
       </div>`;
     overlay.appendChild(mid);
 
@@ -298,9 +295,9 @@ add_shortcode('consultoria_gpt', function() {
 
     const terms = overlay.querySelector('#ci-gpt-terms');
     const gCont = overlay.querySelector('#ci-gpt-google');
+
     function toggleAuth(){
       const enabled = terms && terms.checked;
-
       if(gCont){
         gCont.style.opacity = enabled ? '1' : '.5';
         gCont.style.pointerEvents = enabled ? 'auto' : 'none';
