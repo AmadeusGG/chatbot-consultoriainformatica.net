@@ -297,45 +297,30 @@ add_shortcode('consultoria_gpt', function() {
     if (closeBtn) closeBtn.addEventListener('click', () => { window.location.href = '/'; });
 
     const terms = overlay.querySelector('#ci-gpt-terms');
-    const emailBtn = overlay.querySelector('#ci-gpt-email-btn');
     const gCont = overlay.querySelector('#ci-gpt-google');
-
-    function toggleAuthBtns(){
+    function toggleAuth(){
       const enabled = terms && terms.checked;
-      if(emailBtn){
-        emailBtn.disabled = !enabled;
-        emailBtn.style.opacity = enabled ? '1' : '.5';
-        emailBtn.style.pointerEvents = enabled ? 'auto' : 'none';
-      }
+
       if(gCont){
         gCont.style.opacity = enabled ? '1' : '.5';
         gCont.style.pointerEvents = enabled ? 'auto' : 'none';
       }
     }
-    toggleAuthBtns();
+    toggleAuth();
     if(terms){
-      terms.addEventListener('change', toggleAuthBtns);
+      terms.addEventListener('change', toggleAuth);
     }
-
-    if (emailBtn) emailBtn.addEventListener('click', () => {
-      const email = overlay.querySelector('#ci-gpt-email');
-      if (!terms || !terms.checked) { alert('Debes aceptar los términos'); return; }
-      if (!email || !email.value) { alert('Introduce un correo'); return; }
-      localStorage.setItem('ci-gpt-auth','1');
-      location.reload();
-    });
 
     const waitG = setInterval(function(){
       if(window.google && window.google.accounts && clientId){
         clearInterval(waitG);
         google.accounts.id.initialize({client_id: clientId, callback: handleCredentialResponse});
-        const gCont = document.getElementById('ci-gpt-google');
         const gWidth = gCont ? gCont.clientWidth : 320;
         google.accounts.id.renderButton(gCont, {
           theme: themeOpt === 'dark' ? 'filled_black' : 'outline',
           width: gWidth,
         });
-        toggleAuthBtns();
+        toggleAuth();
       }
     }, 100);
   }
