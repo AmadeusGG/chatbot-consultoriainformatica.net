@@ -76,6 +76,12 @@ add_action('wp_enqueue_scripts', function(){
         wp_script_add_data('ci-gsi', 'async', true);
         wp_script_add_data('ci-gsi', 'defer', true);
     }
+
+    if (function_exists('googlesitekit_enqueue_gtag')) {
+        googlesitekit_enqueue_gtag();
+    } else {
+        do_action('googlesitekit_enqueue_gtag');
+    }
 }, PHP_INT_MAX);
 
 /* =========================
@@ -236,6 +242,11 @@ add_shortcode('consultoria_gpt', function() {
   const authed    = localStorage.getItem('ci-gpt-auth') === '1';
 
   function handleCredentialResponse(res){
+    const terms = document.querySelector('#ci-gpt-terms');
+    if(!terms || !terms.checked){
+      alert('Debes aceptar los términos');
+      return;
+    }
     if(!res || !res.credential || !googleUrl) return;
     const form = new FormData();
     form.append('id_token', res.credential);
@@ -273,7 +284,7 @@ add_shortcode('consultoria_gpt', function() {
         <div style="display:flex;align-items:center;gap:8px;font-size:16px;color:#64748b;max-width:400px;box-sizing:border-box;"><span style="flex:1;height:1px;background:#e2e8f0;"></span>o<span style="flex:1;height:1px;background:#e2e8f0;"></span></div>
         <input type="email" id="ci-gpt-email" placeholder="Correo electrónico" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;width:100%;max-width:400px;font-size:16px;box-sizing:border-box;">
         <button id="ci-gpt-email-btn" style="padding:10px;border:none;border-radius:8px;background:#f97316;color:#fff;font-weight:600;cursor:pointer;width:100%;max-width:400px;font-size:16px;box-sizing:border-box;">Continuar con correo electrónico</button>
-        <label style="font-size:16px;color:#475569;line-height:1.4;max-width:400px;box-sizing:border-box;"><input type="checkbox" id="ci-gpt-terms"> Acepto los <a href="/terminos" target="_blank">Términos de Servicio</a> y la <a href="/privacidad" target="_blank">Política de Privacidad</a></label>
+        <label style="font-size:16px;color:#475569;line-height:1.4;max-width:400px;box-sizing:border-box;"><input type="checkbox" id="ci-gpt-terms" required> Acepto los <a href="https://consultoriainformatica.net/terminos-de-servicio-agente-ia-gratis/" target="_blank">Términos de Servicio</a> y la <a href="https://consultoriainformatica.net/politica-privacidad/" target="_blank">Política de Privacidad</a></label>
       </div>`;
     overlay.appendChild(mid);
 
