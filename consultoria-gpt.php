@@ -1,3 +1,4 @@
+
 <?php
 /*
 Plugin Name: Consultoria GPT
@@ -50,15 +51,30 @@ function ci_gpt_has_shortcode_page(){
 add_action('wp_enqueue_scripts', function(){
     if (!ci_gpt_has_shortcode_page()) return;
 
-    $gsi_src = 'https://accounts.google.com/gsi/client';
+    $gsi_src   = 'https://accounts.google.com/gsi/client';
+    $ga_srcs   = [
+        'https://www.googletagmanager.com',
+        'https://www.google-analytics.com'
+    ];
     global $wp_scripts, $wp_styles;
 
     if ($wp_scripts){
         foreach ($wp_scripts->queue as $handle){
-            $src = isset($wp_scripts->registered[$handle]->src) ? $wp_scripts->registered[$handle]->src : '';
-            if (strpos($src, $gsi_src) !== false){
-                wp_script_add_data($handle, 'async', true);
-                wp_script_add_data($handle, 'defer', true);
+            $src  = isset($wp_scripts->registered[$handle]->src) ? $wp_scripts->registered[$handle]->src : '';
+            $keep = strpos($src, $gsi_src) !== false;
+            if (!$keep){
+                foreach ($ga_srcs as $ga_src){
+                    if (strpos($src, $ga_src) !== false || strpos($handle, 'googlesitekit') !== false){
+                        $keep = true;
+                        break;
+                    }
+                }
+            }
+            if ($keep){
+                if (strpos($src, $gsi_src) !== false){
+                    wp_script_add_data($handle, 'async', true);
+                    wp_script_add_data($handle, 'defer', true);
+                }
                 continue;
             }
             wp_dequeue_script($handle);
@@ -67,6 +83,10 @@ add_action('wp_enqueue_scripts', function(){
 
     if ($wp_styles){
         foreach ($wp_styles->queue as $handle){
+            $src = isset($wp_styles->registered[$handle]->src) ? $wp_styles->registered[$handle]->src : '';
+            if (strpos($handle, 'googlesitekit') !== false){
+                continue;
+            }
             wp_dequeue_style($handle);
         }
     }
