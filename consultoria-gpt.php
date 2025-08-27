@@ -1,3 +1,4 @@
+
 <?php
 /*
 Plugin Name: Consultoria GPT
@@ -50,15 +51,30 @@ function ci_gpt_has_shortcode_page(){
 add_action('wp_enqueue_scripts', function(){
     if (!ci_gpt_has_shortcode_page()) return;
 
-    $gsi_src = 'https://accounts.google.com/gsi/client';
+    $gsi_src   = 'https://accounts.google.com/gsi/client';
+    $ga_srcs   = [
+        'https://www.googletagmanager.com',
+        'https://www.google-analytics.com'
+    ];
     global $wp_scripts, $wp_styles;
 
     if ($wp_scripts){
         foreach ($wp_scripts->queue as $handle){
-            $src = isset($wp_scripts->registered[$handle]->src) ? $wp_scripts->registered[$handle]->src : '';
-            if (strpos($src, $gsi_src) !== false){
-                wp_script_add_data($handle, 'async', true);
-                wp_script_add_data($handle, 'defer', true);
+            $src  = isset($wp_scripts->registered[$handle]->src) ? $wp_scripts->registered[$handle]->src : '';
+            $keep = strpos($src, $gsi_src) !== false;
+            if (!$keep){
+                foreach ($ga_srcs as $ga_src){
+                    if (strpos($src, $ga_src) !== false || strpos($handle, 'googlesitekit') !== false){
+                        $keep = true;
+                        break;
+                    }
+                }
+            }
+            if ($keep){
+                if (strpos($src, $gsi_src) !== false){
+                    wp_script_add_data($handle, 'async', true);
+                    wp_script_add_data($handle, 'defer', true);
+                }
                 continue;
             }
             wp_dequeue_script($handle);
@@ -67,6 +83,10 @@ add_action('wp_enqueue_scripts', function(){
 
     if ($wp_styles){
         foreach ($wp_styles->queue as $handle){
+            $src = isset($wp_styles->registered[$handle]->src) ? $wp_styles->registered[$handle]->src : '';
+            if (strpos($handle, 'googlesitekit') !== false){
+                continue;
+            }
             wp_dequeue_style($handle);
         }
     }
@@ -83,6 +103,22 @@ add_action('wp_enqueue_scripts', function(){
         do_action('googlesitekit_enqueue_gtag');
     }
 }, PHP_INT_MAX);
+
+// Ensure gtag sends basic events when the login page loads
+add_action('wp_print_scripts', function(){
+    if (!ci_gpt_has_shortcode_page()) return; ?>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-F2FRCSTKYE');
+    gtag('event', 'page_view');
+    window.addEventListener('scroll', function onScroll(){
+        gtag('event', 'scroll');
+        window.removeEventListener('scroll', onScroll);
+    }, { once: true });
+    </script>
+<?php }, PHP_INT_MAX);
 
 /* =========================
  *  ADMIN MENU & SETTINGS
@@ -280,13 +316,24 @@ add_shortcode('consultoria_gpt', function() {
     const mid = document.createElement('div');
     mid.style.cssText = 'flex:1;padding:24px;display:flex;justify-content:center;align-items:center;';
     mid.innerHTML = `<div style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:16px;font-family:\'Poppins\',sans-serif;color:#0f172a;">
-        <label style="font-size:16px;color:#475569;line-height:1.4;max-width:400px;box-sizing:border-box;display:flex;align-items:center;gap:8px;"><input type="checkbox" id="ci-gpt-terms" required> Acepto los <a href="https://consultoriainformatica.net/terminos-de-servicio-agente-ia-gratis/" target="_blank">Términos de Servicio</a> y la <a href="https://consultoriainformatica.net/politica-privacidad/" target="_blank">Política de Privacidad</a></label>
+        
+        <table id="ci-terms-table" style="width:100%;max-width:400px;border-collapse:collapse;">
+          <tr>
+            <td style="width:20%;vertical-align:top;"><input type="checkbox" id="ci-gpt-terms" required></td>
+            <td style="width:80%;font-size:12px;color:#475569;line-height:1.4;">Acepto los <a href="https://consultoriainformatica.net/terminos-de-servicio-agente-ia-gratis/" target="_blank">Términos de Servicio</a> y la <a href="https://consultoriainformatica.net/politica-privacidad/" target="_blank">Política de Privacidad</a></td>
+          </tr>
+        </table>
         <div id="ci-gpt-google" style="width:100%;max-width:400px;box-sizing:border-box;"></div>
       </div>`;
     overlay.appendChild(mid);
 
     const style = document.createElement('style');
-    style.textContent = `#ci-gpt-terms{transform:scale(1.5);accent-color:#2563eb;filter:drop-shadow(0 0 2px #2563eb);animation:ciTermsPulse 1s infinite alternate;}
+    style.textContent = `#ci-terms-table{width:100%;border-collapse:collapse;}
+    #ci-terms-table td{padding:0;vertical-align:top;}
+    #ci-terms-table td:first-child{width:20%;}
+    #ci-terms-table td:last-child{width:80%;}
+    @media(max-width:480px){#ci-terms-table td{display:block;width:100%;}#ci-terms-table td:first-child{margin-bottom:8px;}}
+    #ci-gpt-terms{transform:scale(1.5);accent-color:#2563eb;filter:drop-shadow(0 0 2px #2563eb);animation:ciTermsPulse 1s infinite alternate;}
     @media(max-width:768px){#ci-gpt-terms{transform:scale(2);}}
     @keyframes ciTermsPulse{from{filter:drop-shadow(0 0 2px #2563eb);}to{filter:drop-shadow(0 0 6px #2563eb);}}`;
     overlay.appendChild(style);
@@ -321,9 +368,10 @@ add_shortcode('consultoria_gpt', function() {
       if(window.google && window.google.accounts && clientId){
         clearInterval(waitG);
         google.accounts.id.initialize({client_id: clientId, callback: handleCredentialResponse});
-        const gWidth = gCont ? gCont.clientWidth : 320;
+        const gWidth = gCont && gCont.clientWidth ? gCont.clientWidth : 400;
         google.accounts.id.renderButton(gCont, {
           theme: themeOpt === 'dark' ? 'filled_black' : 'outline',
+          size: 'large',
           width: gWidth,
         });
         toggleAuth();
