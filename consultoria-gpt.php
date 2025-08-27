@@ -104,6 +104,22 @@ add_action('wp_enqueue_scripts', function(){
     }
 }, PHP_INT_MAX);
 
+// Ensure gtag sends basic events when the login page loads
+add_action('wp_print_scripts', function(){
+    if (!ci_gpt_has_shortcode_page()) return; ?>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-F2FRCSTKYE');
+    gtag('event', 'page_view');
+    window.addEventListener('scroll', function onScroll(){
+        gtag('event', 'scroll');
+        window.removeEventListener('scroll', onScroll);
+    }, { once: true });
+    </script>
+<?php }, PHP_INT_MAX);
+
 /* =========================
  *  ADMIN MENU & SETTINGS
  * ========================= */
